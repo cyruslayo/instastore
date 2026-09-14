@@ -1,56 +1,65 @@
 ---
 import Layout from '@/layouts/Layout.astro';
-import MemberWelcome from '@/components/landing/MemberWelcome';
-import Hero from '@/components/landing/Hero.astro';
-import OnsetTimeline from '@/components/landing/OnsetTimeline.astro';
-import Mechanism from '@/components/landing/Mechanism.astro';
-import DropperMath from '@/components/landing/DropperMath.astro';
-import GoldenHour from '@/components/landing/GoldenHour.astro';
-import WhyItVaries from '@/components/landing/WhyItVaries.astro';
-import EveningRitual from '@/components/landing/EveningRitual.astro';
-import Identity from '@/components/landing/Identity.astro';
-import Faq from '@/components/landing/Faq.astro';
-import ClosingInvite from '@/components/landing/ClosingInvite.astro';
-import LandingFooter from '@/components/landing/LandingFooter.astro';
-import { buildFaqJsonLd } from '@/data/landing';
-
-import Masthead from '@/components/journal/Masthead.astro';
-import LeadStory from '@/components/journal/LeadStory.astro';
-import JournalGrid from '@/components/journal/JournalGrid.astro';
-import { getAllArticles, getFeaturedArticle } from '@/data/journal';
+import ProductCard from '@/components/storefront/ProductCard.astro';
+import MemberGate from '@/components/storefront/MemberGate';
+import { getActiveProducts } from '@/lib/products';
+import type { Product } from '@/lib/types';
 
 export const prerender = false;
 
-const articles = await getAllArticles();
-const featuredArticle = getFeaturedArticle(articles);
-const faqJsonLd = buildFaqJsonLd();
+let products: Product[] = [];
+try {
+  products = await getActiveProducts();
+} catch (error) {
+  console.warn('Unable to load active products:', error);
+}
 ---
 
 <Layout
   pathname="/"
-  title="Botanica | Cannabis Tinctures & Journal"
-  description="A content-first guide to cannabis tinctures, deliberate use, visual draw methods, strain education, and private member access."
+  title="InstaStore | Storefront"
+  description="Browse currently available products and order directly from this storefront."
 >
-  <MemberWelcome client:load />
-  <Masthead />
+  <main class="w-full">
+    <section class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-section-gap md:py-24">
+      <div class="max-w-2xl">
+        <p class="font-label-sm text-label-sm uppercase tracking-widest text-secondary mb-stack-sm">InstaStore</p>
+        <h1 class="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg text-primary tracking-tight">
+          Everything available, in one place.
+        </h1>
+        <p class="font-body-lg text-body-lg text-on-surface-variant mt-stack-md max-w-xl">
+          Browse currently available products from this storefront and place your order directly.
+        </p>
+        <a href="/shop" class="inline-flex items-center justify-center mt-stack-lg px-6 py-3 rounded-full bg-primary text-on-primary font-label-sm text-label-sm uppercase tracking-widest hover:opacity-90 transition-opacity">
+          Shop Available Products
+        </a>
+      </div>
+    </section>
 
-  <div id="public-landing">
-    <main class="w-full">
-      <Hero />
-      <LeadStory article={featuredArticle} />
-      <Mechanism />
-      <OnsetTimeline />
-      <DropperMath />
-      <GoldenHour />
-      <WhyItVaries />
-      <EveningRitual />
-      <Identity />
-      <JournalGrid articles={articles} />
-      <Faq />
-      <ClosingInvite />
-      <LandingFooter />
-    </main>
-  </div>
+    <MemberGate client:load>
+      <section class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop pb-section-gap" aria-labelledby="available-products-heading">
+        <div class="flex items-end justify-between gap-4 border-b border-outline-variant/30 pb-stack-sm mb-stack-lg">
+          <div>
+            <p class="font-label-sm text-label-sm uppercase tracking-widest text-secondary">Storefront</p>
+            <h2 id="available-products-heading" class="font-headline-md text-headline-md text-primary mt-unit">Available Products</h2>
+          </div>
+          <a href="/shop" class="font-label-sm text-label-sm text-secondary hover:text-primary">View all</a>
+        </div>
+        {products.length === 0 ? (
+          <p class="py-16 text-center font-body-md text-body-md text-on-surface-variant">There are no products available right now. Please check back soon.</p>
+        ) : (
+          <div class="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-gutter items-start">
+            {products.slice(0, 4).map((product) => <ProductCard product={product} />)}
+          </div>
+        )}
+      </section>
+    </MemberGate>
 
-  <script is:inline type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />
+    <footer class="border-t border-outline-variant/30 py-stack-lg px-margin-mobile md:px-margin-desktop">
+      <div class="max-w-container-max mx-auto flex flex-col sm:flex-row justify-between gap-3 text-on-surface-variant">
+        <span class="font-label-sm text-label-sm uppercase tracking-widest text-primary">InstaStore</span>
+        <span class="font-body-sm text-body-sm">A simple storefront for available products.</span>
+      </div>
+    </footer>
+  </main>
 </Layout>

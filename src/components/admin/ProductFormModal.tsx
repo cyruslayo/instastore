@@ -197,7 +197,7 @@ export default function ProductFormModal({
 
             <div className="sm:col-span-2 border-t border-outline-variant/60 pt-5 space-y-4">
               <div>
-                <h4 className="font-headline-sm text-on-surface">Tincture &amp; Batch Details</h4>
+                <h4 className="font-headline-sm text-on-surface">Additional Product Details</h4>
                 <p className="font-body-sm text-on-surface-variant">Optional metadata controlled by the administrator.</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

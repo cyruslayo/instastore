@@ -18,13 +18,13 @@ try {
 }
 
 if (!product) {
-  return Astro.redirect('/oils');
+  return Astro.redirect('/shop');
 }
 ---
 
 <Layout
   pathname={`/product/${product.slug}`}
-  title={`${product.name} | Botanical Essence`}
+  title={`${product.name} | InstaStore`}
   description={product.description}
   image={product.image}
 >

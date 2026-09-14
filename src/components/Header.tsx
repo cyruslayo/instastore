@@ -37,7 +37,7 @@ export default function Header({ pathname }: { pathname: string }) {
         )}
 
         <a href="/" className="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg tracking-tighter text-primary text-center flex-1">
-          BOTANICA
+          INSTASTORE
         </a>
 
         {isCheckout ? (
@@ -63,11 +63,8 @@ export default function Header({ pathname }: { pathname: string }) {
           </a>
           {approved && (
             <>
-              <a href="/oils" className={`font-label-sm text-label-sm uppercase tracking-widest transition-colors ${pathname === '/oils' ? 'text-primary border-b-2 border-primary pb-1' : 'text-on-surface-variant hover:text-primary'}`}>
-                Oils
-              </a>
-              <a href="/edibles" className={`font-label-sm text-label-sm uppercase tracking-widest transition-colors ${pathname === '/edibles' ? 'text-primary border-b-2 border-primary pb-1' : 'text-on-surface-variant hover:text-primary'}`}>
-                Edibles
+              <a href="/shop" className={`font-label-sm text-label-sm uppercase tracking-widest transition-colors ${pathname === '/shop' ? 'text-primary border-b-2 border-primary pb-1' : 'text-on-surface-variant hover:text-primary'}`}>
+                Shop
               </a>
             </>
           )}

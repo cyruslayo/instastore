@@ -1,77 +1,27 @@
 ---
 import Layout from '@/layouts/Layout.astro';
 import MemberGate from '@/components/storefront/MemberGate';
-import { OILS_IMAGE } from '@/data/landing';
 
 export const prerender = true;
 ---
 
-<Layout
-  pathname="/portal"
-  title="Member Portal | Botanica Private Apothecary"
-  description="Private member dashboard and apothecary collection access."
->
+<Layout pathname="/portal" title="Member Portal | InstaStore" description="Member dashboard and storefront access.">
   <MemberGate client:load>
-  <main class="w-full pt-12 pb-24 px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">
-    <div id="portal-root" class="space-y-stack-lg">
-      <div class="rounded-2xl overflow-hidden botanical-shadow bg-surface-container-low p-6 sm:p-10 md:p-14 border border-secondary/20">
+    <main class="w-full pt-12 pb-24 px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">
+      <div class="rounded-2xl bg-surface-container-low p-6 sm:p-10 md:p-14 border border-secondary/20 botanical-shadow">
         <div class="max-w-2xl space-y-4">
           <div class="inline-flex items-center gap-2 px-3 py-1 bg-secondary-container/40 rounded-full">
             <span class="w-2 h-2 rounded-full bg-secondary"></span>
-            <span class="font-label-sm text-xs font-bold uppercase tracking-widest text-secondary">
-              Verified Apothecary Access
-            </span>
+            <span class="font-label-sm text-xs font-bold uppercase tracking-widest text-secondary">Verified Member Access</span>
           </div>
-          <h1 class="font-display-md md:font-display-lg text-display-md md:text-display-lg text-primary">
-            Private Member Portal
-          </h1>
-          <p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
-            Your private member verification is active. Explore current small-batch tinctures, manage referral privileges, and read batch release notes.
-          </p>
+          <h1 class="font-display-md md:font-display-lg text-display-md md:text-display-lg text-primary">Member Portal</h1>
+          <p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">Your member verification is active. Browse available products or manage your referral privileges.</p>
           <div class="flex flex-wrap gap-4 pt-2">
-            <a
-              href="/oils"
-              class="px-8 py-3.5 bg-primary text-on-primary font-label-sm text-label-sm uppercase tracking-widest rounded-full hover:opacity-90 active:scale-[0.98] transition-all shadow-sm"
-            >
-              Shop Botanical Tinctures &rarr;
-            </a>
-            <a
-              href="/invite"
-              class="px-8 py-3.5 border border-outline text-primary font-label-sm text-label-sm uppercase tracking-widest rounded-full hover:bg-surface-container active:scale-[0.98] transition-colors"
-            >
-              Manage Member Referrals
-            </a>
+            <a href="/shop" class="px-8 py-3.5 bg-primary text-on-primary font-label-sm text-label-sm uppercase tracking-widest rounded-full hover:opacity-90 transition-all">Shop Available Products &rarr;</a>
+            <a href="/invite" class="px-8 py-3.5 border border-outline text-primary font-label-sm text-label-sm uppercase tracking-widest rounded-full hover:bg-surface-container transition-colors">Manage Referrals</a>
           </div>
         </div>
       </div>
-
-      <div>
-        <a
-          href="/oils"
-          class="group relative block aspect-[16/9] md:aspect-[21/9] rounded-2xl overflow-hidden bg-surface-container-high transition-transform duration-300 hover:scale-[1.005] botanical-shadow"
-        >
-          <div class="absolute inset-0 p-stack-lg md:p-12 flex flex-col justify-end z-10 bg-gradient-to-t from-primary/85 via-primary/30 to-transparent">
-            <div class="max-w-xl">
-              <span class="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-on-primary font-label-sm text-xs uppercase tracking-widest mb-3">
-                Flagship Formulation
-              </span>
-              <h2 class="font-display-md md:font-display-lg text-display-md md:text-display-lg text-on-primary leading-tight">
-                Botanical Oils &amp; Tinctures
-              </h2>
-              <p class="font-body-md text-body-md text-on-primary/90 mt-2">
-                Full-spectrum organic tinctures micro-batched for pure biological balance &rarr;
-              </p>
-            </div>
-          </div>
-          <img
-            src={OILS_IMAGE}
-            alt="Botanical Oils"
-            referrerpolicy="no-referrer"
-            class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-          />
-        </a>
-      </div>
-    </div>
-  </main>
+    </main>
   </MemberGate>
 </Layout>

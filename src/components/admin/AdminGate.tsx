@@ -45,7 +45,7 @@ export default function AdminGate({ children }: { children: ReactNode }) {
         <div className="mb-6">
           <span className="font-mono text-[10px] uppercase tracking-wider text-secondary font-bold block">Security Gate</span>
           <h2 className="font-headline-sm text-lg sm:text-headline-sm text-on-surface font-bold mt-0.5">Admin Authentication</h2>
-          <p className="font-body-sm text-xs sm:text-sm text-on-surface-variant mt-1">Sign in with authorized administrator credentials to manage Botanica.</p>
+          <p className="font-body-sm text-xs sm:text-sm text-on-surface-variant mt-1">Sign in with authorized administrator credentials to manage InstaStore.</p>
         </div>
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-1.5">

@@ -41,10 +41,10 @@ export default function MemberWelcome() {
           </a>
           <span className="text-outline-variant" aria-hidden="true">|</span>
           <a
-            href="/oils"
+            href="/shop"
             className="px-4 py-1.5 bg-primary text-on-primary font-label-sm text-xs uppercase tracking-widest font-bold rounded-full hover:opacity-90 active:scale-[0.98] transition-all"
           >
-            Apothecary Drop
+            Shop Available Products
           </a>
         </div>
       </div>

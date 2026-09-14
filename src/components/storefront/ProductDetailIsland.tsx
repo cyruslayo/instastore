@@ -80,7 +80,7 @@ export default function ProductDetailIsland({ product }: { product: Product }) {
                 {product.batch_code && <p>Current batch: {product.batch_code}</p>}
               </div>
             )}
-            <ProductDescription description={product.description || 'Product details are managed by the Botanica apothecary.'} />
+            <ProductDescription description={product.description || 'Product details are managed by the storefront.'} />
           </div>
 
           {approved ? (
@@ -129,7 +129,7 @@ export default function ProductDetailIsland({ product }: { product: Product }) {
                   <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
                     {pending
                       ? 'Your access request is currently under review by our team. You will be able to purchase once verified.'
-                      : 'Botanica is an invite-only store. You need an approved referral invitation from an existing member to purchase.'}
+                      : 'This is an invite-only store. You need an approved referral invitation from an existing member to purchase.'}
                   </p>
                   {!pending && (
                     <a
@@ -155,7 +155,7 @@ export default function ProductDetailIsland({ product }: { product: Product }) {
               </button>
               <div className={`overflow-hidden transition-all duration-300 ease-in-out ${openSection === 'details' ? 'max-h-[500px] pb-4 opacity-100' : 'max-h-0 opacity-0'}`}>
                 <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
-                  Product information is managed by the Botanica apothecary.
+                  Product information is managed by the storefront.
                 </p>
               </div>
             </div>

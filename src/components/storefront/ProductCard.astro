@@ -7,9 +7,6 @@ interface Props {
     price: number;
     image?: string;
     description?: string;
-    strength_mg?: number | null;
-    bottle_size_ml?: number | null;
-    strain_name?: string | null;
   };
   aspect?: string;
   className?: string;
@@ -44,7 +41,5 @@ const price = new Intl.NumberFormat('en-NG', {
       <p class="font-body-md text-body-md text-on-surface-variant mb-stack-sm truncate max-w-full">{product.description}</p>
     )}
     <p class="font-body-lg text-body-lg text-primary">{price}</p>
-    {(product.strength_mg != null && product.bottle_size_ml != null) && <p class="font-label-sm text-label-sm text-secondary mt-1">{product.strength_mg} mg / {product.bottle_size_ml} ml</p>}
-    {product.strain_name && <p class="font-label-sm text-label-sm text-on-surface-variant mt-1">Current strain: {product.strain_name}</p>}
   </div>
 </a>

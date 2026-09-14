@@ -22,17 +22,7 @@ export interface AnnouncementSettings {
 export interface SiteSettings {
   bank: BankSettings;
   announcement: AnnouncementSettings;
-  heroTrustBadge: string;
-  apothecaryCalloutTitle: string;
-  apothecaryCalloutSubtitle: string;
   landingInviteCode?: string;
-  publicationName?: string;
-  volume?: string;
-  edition?: string;
-  circulation?: string;
-  harvestLabel?: string;
-  qualityBadge?: string;
-  archiveLinkText?: string;
 }
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
@@ -45,21 +35,21 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   announcement: {
     enabled: false,
     message: 'Autumn Harvest BT-2481 is now available for approved members.',
-    linkText: 'Explore Oils',
-    linkUrl: '/oils',
+    linkText: 'Shop Available Products',
+    linkUrl: '/shop',
   },
-  heroTrustBadge: 'Members Only · Application Required',
-  apothecaryCalloutTitle: 'Looking for the Apothecary Collection?',
-  apothecaryCalloutSubtitle: 'Our tinctures are batched in limited micro-volumes. Enter your reader invite code to browse current bottle drops.',
   landingInviteCode: '',
 };
 
-const LOCAL_SITE_SETTINGS_KEY = 'botanica_site_settings';
-export const SITE_SETTINGS_EVENT = 'botanica-site-settings-updated';
+const LOCAL_SITE_SETTINGS_KEY = 'instastore_site_settings';
+export const SITE_SETTINGS_EVENT = 'instastore-site-settings-updated';
 
 function isSupabaseConfigured(): boolean {
   try {
+    // Astro injects ImportMeta.env; the fallback keeps this helper safe in non-Astro tooling.
+    // @ts-ignore -- ImportMeta.env is provided by Astro/Vite.
     const url = import.meta.env.PUBLIC_SUPABASE_URL;
+    // @ts-ignore -- ImportMeta.env is provided by Astro/Vite.
     const anonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
     if (!url || !anonKey) return false;
     if (url.includes('your-project') || url.includes('placeholder') || anonKey === 'your-anon-key') {
@@ -96,7 +86,9 @@ export function getSiteSettings(): SiteSettings {
       if (stored) {
         return mergeSiteSettings(JSON.parse(stored));
       }
-    } catch {}
+    } catch {
+      // Ignore malformed cached settings and use defaults.
+    }
   }
   return DEFAULT_SITE_SETTINGS;
 }

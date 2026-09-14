@@ -88,7 +88,7 @@ export default function AdminProducts() {
         <div>
           <h2 className="font-headline-md text-xl sm:text-headline-md text-on-surface">Products</h2>
           <p className="font-body-sm text-xs sm:text-sm text-on-surface-variant">
-            Manage your apothecary catalog, formulations, and stock levels.
+            Manage your product catalog and stock levels.
           </p>
         </div>
         <button

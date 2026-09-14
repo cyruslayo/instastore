@@ -12,7 +12,7 @@ const ORDER_STEPS = ['Pending Verification', 'Processing', 'Shipped', 'Fulfilled
 const STATUS_COPY: Record<string, string> = {
   'Pending Verification': 'We received your order and receipt. Payment verification is pending.',
   Processing: 'Payment is verified. Your order is being prepared.',
-  Shipped: 'Your order has left Botanica for delivery.',
+  Shipped: 'Your order has left the store for delivery.',
   Fulfilled: 'Your order is complete.',
   Cancelled: 'This order was cancelled.',
 };
@@ -131,7 +131,7 @@ export default function OrderHistory() {
 
                 <div className="py-4">
                   <p className="font-body-sm text-on-surface-variant">
-                    {STATUS_COPY[order.status] || 'Your order status was updated by Botanica.'}
+                    {STATUS_COPY[order.status] || 'Your order status was updated by the store.'}
                   </p>
 
                   {cancelled ? (

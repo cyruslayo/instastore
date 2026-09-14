@@ -115,7 +115,9 @@ export default function AccessStatusBanner() {
       return () => {
         supabase.removeChannel(channel);
       };
-    } catch {}
+    } catch {
+      // Membership realtime is optional; polling remains the fallback.
+    }
   }, [pending, access.instagramHandle, revalidateStatus]);
 
   if (!isHydrated || dismissed) return null;
@@ -143,7 +145,7 @@ export default function AccessStatusBanner() {
           </div>
           <div className="flex items-center gap-3 shrink-0">
             <a
-              href="/oils"
+              href="/shop"
               onClick={() => dismissApprovalCelebration()}
               className="px-4 py-1.5 bg-secondary text-primary rounded-full font-label-sm text-label-sm uppercase tracking-wider font-bold hover:scale-105 transition-transform"
             >

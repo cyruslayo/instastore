@@ -13,14 +13,14 @@ interface Props {
 }
 
 const {
-  title = 'Botanica | Botanical Essence',
-  description = 'Private apothecary and botanical journal. Small-batch cannabis tinctures and deliberate routines.',
+  title = 'InstaStore | Storefront',
+  description = 'Browse currently available products and order directly from this storefront.',
   pathname,
   image = 'https://lh3.googleusercontent.com/aida-public/AB6AXuD1Yy6GMbIqi-iQxCvqjcLUfqwsZwkrt1RwcRWsq9LWTMGM2sWHofVCipqrnFTdmiNqF0BxZgRzurPlmSZ0H1_qHIX2EgXTqNjfQcjcuK2s4Xx3yAuJ-_QBo1i06XVliNJMJBxYP_gbqKVPVCFSA6bkTv1oLOQxIQM0Zh-klcrUdkcId8u87rBkqu2lUURTMk0qQO_X5KlbGWgQSN8rdjfBuXHAz2pzalmlqS1j13ztnc0aRaHdnK8OxA',
   type = 'website'
 } = Astro.props;
 
-const siteUrl = Astro.site ? Astro.site.toString().replace(/\/$/, '') : (Astro.url.origin || 'https://botanica.essence');
+const siteUrl = Astro.site ? Astro.site.toString().replace(/\/$/, '') : (Astro.url.origin || 'https://instastore.local');
 const canonicalUrl = new URL(pathname, siteUrl).toString();
 ---
 
@@ -44,7 +44,7 @@ const canonicalUrl = new URL(pathname, siteUrl).toString();
     <meta property="og:type" content={type} />
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:image" content={image} />
-    <meta property="og:site_name" content="Botanica" />
+    <meta property="og:site_name" content="InstaStore" />
 
     <!-- Twitter / Instagram Large Card Previews -->
     <meta name="twitter:card" content="summary_large_image" />

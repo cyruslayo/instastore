@@ -168,7 +168,7 @@ export default function InviteRegistration({ initialCode = '' }: { initialCode?:
 
           <div className="flex items-center justify-between pt-4 border-t border-outline-variant/30">
             <a
-              href="/oils"
+              href="/shop"
               className="px-6 py-3 bg-primary text-on-primary rounded-full font-label-sm text-label-sm uppercase tracking-widest hover:bg-primary/90 transition-colors"
             >
               Shop Collection &rarr;

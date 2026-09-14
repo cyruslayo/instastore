@@ -1,40 +1,12 @@
 ---
 import Layout from '@/layouts/Layout.astro';
 import ProductCard from '@/components/storefront/ProductCard.astro';
-import MemberGate from '@/components/storefront/MemberGate';
 import { getActiveProducts } from '@/lib/products';
 import type { Product } from '@/lib/types';
-
 export const prerender = false;
-
 let products: Product[] = [];
-try {
-  products = await getActiveProducts();
-} catch (error) {
-  console.warn('Unable to load active products:', error);
-}
+try { products = await getActiveProducts(); } catch (error) { console.warn('Unable to load active products:', error); }
 ---
-
 <Layout pathname="/shop" title="Shop | InstaStore" description="Browse currently available products.">
-  <MemberGate client:load>
-    <main class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop pb-section-gap pt-24 md:pt-32">
-      <section class="py-section-gap text-center max-w-2xl mx-auto">
-        <h1 class="font-headline-md text-headline-md text-primary mb-stack-md">Shop</h1>
-        <p class="font-body-md text-body-md text-on-surface-variant">Browse what is currently available.</p>
-      </section>
-
-      <div class="flex items-center justify-between mb-8 border-b border-outline-variant/30 pb-4">
-        <h2 class="font-headline-sm text-headline-sm text-primary">Available Products</h2>
-        <span class="font-body-md text-body-md text-on-surface-variant">{products.length} products</span>
-      </div>
-
-      {products.length === 0 ? (
-        <p class="py-20 text-center font-body-md text-body-md text-on-surface-variant">There are no products available right now. Please check back soon.</p>
-      ) : (
-        <div class="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-gutter items-start">
-          {products.map((product) => <ProductCard product={product} />)}
-        </div>
-      )}
-    </main>
-  </MemberGate>
+  <main class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop pb-section-gap pt-24 md:pt-32"><section class="py-section-gap text-center max-w-2xl mx-auto"><h1 class="font-headline-md text-headline-md text-primary mb-stack-md">Shop</h1><p class="font-body-md text-body-md text-on-surface-variant">Browse what is currently available.</p></section><div class="flex items-center justify-between mb-8 border-b border-outline-variant/30 pb-4"><h2 class="font-headline-sm text-headline-sm text-primary">Available Products</h2><span class="font-body-md text-body-md text-on-surface-variant">{products.length} products</span></div>{products.length === 0 ? <p class="py-20 text-center font-body-md text-body-md text-on-surface-variant">There are no products available right now. Please check back soon.</p> : <div class="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-gutter items-start">{products.map((product) => <ProductCard product={product} />)}</div>}</main>
 </Layout>

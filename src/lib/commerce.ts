@@ -1,1 +1,0 @@
-export const FIXED_DELIVERY_FEE_NAIRA = 5000;

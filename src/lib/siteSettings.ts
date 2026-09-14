@@ -20,12 +20,13 @@ export interface AnnouncementSettings {
 }
 
 export interface SiteSettings {
+  deliveryFee: number;
   bank: BankSettings;
   announcement: AnnouncementSettings;
-  landingInviteCode?: string;
 }
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
+  deliveryFee: 0,
   bank: {
     bankName: "",
     accountName: "",
@@ -38,7 +39,6 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     linkText: "Shop Available Products",
     linkUrl: "/shop",
   },
-  landingInviteCode: "",
 };
 
 const LOCAL_SITE_SETTINGS_KEY = "instastore_site_settings";
@@ -114,6 +114,7 @@ export async function fetchLiveSiteSettings(): Promise<SiteSettings> {
   const merged = mergeSiteSettings(
     row
       ? {
+          deliveryFee: Number(row.delivery_fee ?? 0),
           bank: {
             bankName: row.bank_name || "",
             accountName: row.account_name || "",
@@ -147,6 +148,7 @@ export async function saveSiteSettings(
   if (readError) throw readError;
 
   const current = mergeSiteSettings({
+    deliveryFee: Number(data.delivery_fee ?? 0),
     bank: {
       bankName: data.bank_name || "",
       accountName: data.account_name || "",

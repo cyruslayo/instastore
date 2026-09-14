@@ -1,15 +1,6 @@
 ---
 import Layout from '@/layouts/Layout.astro';
 import Checkout from '@/components/storefront/Checkout';
-import MemberGate from '@/components/storefront/MemberGate';
-
-// Static shell; checkout logic runs client-side.
 export const prerender = true;
 ---
-
-<Layout pathname="/checkout" title="Checkout | InstaStore">
-  <MemberGate client:load>
-    <Checkout client:load />
-  </MemberGate>
-</Layout>
-
+<Layout pathname="/checkout" title="Checkout | InstaStore"><Checkout client:load /></Layout>

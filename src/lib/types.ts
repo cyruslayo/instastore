@@ -36,12 +36,7 @@ export interface ShippingAddress {
   landmark?: string;
 }
 
-export type OrderStatus =
-  | 'Pending Verification'
-  | 'Processing'
-  | 'Shipped'
-  | 'Fulfilled'
-  | 'Cancelled';
+export type OrderStatus = 'Pending Verification' | 'Processing' | 'Shipped' | 'Fulfilled' | 'Cancelled';
 
 export interface Order {
   id: string;
@@ -73,61 +68,10 @@ export interface CustomerOrderStatus {
   updated_at: string;
 }
 
-// LEGACY - REMOVE IN MEMBERSHIP DECOUPLING PHASE.
-// Kept because the Phase-1 membership order-history UI still consumes it.
-export interface LegacyOrderItem {
-  id: string;
-  name: string;
-  variant: string;
-  price: number;
-  quantity: number;
-  image: string;
-  strength_mg?: number | null;
-  bottle_size_ml?: number | null;
-  strain_name?: string | null;
-  batch_code?: string | null;
-}
-
-// LEGACY - REMOVE IN MEMBERSHIP DECOUPLING PHASE.
-export interface MemberOrder {
-  id: string;
-  items: LegacyOrderItem[];
-  total: number;
-  status: string;
-  created_at: string;
-}
-
 export interface Profile {
   id: string;
   email?: string | null;
   role: 'admin';
   created_at?: string;
   updated_at?: string;
-}
-
-// LEGACY - REMOVE IN MEMBERSHIP DECOUPLING PHASE.
-export interface ReferralCode {
-  id: string;
-  code: string;
-  owner_handle: string;
-  owner_email?: string;
-  owner_id?: string;
-  is_active: boolean;
-  created_at: string;
-}
-
-// LEGACY - REMOVE IN MEMBERSHIP DECOUPLING PHASE.
-export interface AccessRequest {
-  id: string;
-  instagram_handle: string;
-  phone: string;
-  referral_code: string;
-  referred_by: string;
-  status: 'pending' | 'approved' | 'rejected';
-  email?: string;
-  full_name?: string;
-  user_id?: string;
-  reviewed_at?: string;
-  reviewed_by?: string;
-  created_at: string;
 }

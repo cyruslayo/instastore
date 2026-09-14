@@ -65,6 +65,8 @@ declare
   calculated_total numeric(12,2);
   generated_code text;
   inserted_id uuid;
+  existing_code text;
+  existing_phone text;
   item_count integer;
 begin
   if p_customer_name is null or length(btrim(p_customer_name)) = 0 then raise exception 'Customer name is required'; end if;
@@ -74,6 +76,15 @@ begin
   if p_receipt_path is null or p_receipt_path !~ '^receipts/[A-Za-z0-9-]{32,36}\.(jpg|jpeg|png|pdf)$' then raise exception 'Invalid receipt path'; end if;
   if not exists (select 1 from storage.objects where bucket_id = 'receipts' and name = p_receipt_path) then raise exception 'Receipt object does not exist'; end if;
   if p_total is null or p_total < 0 then raise exception 'Invalid submitted total'; end if;
+
+  -- Serialize submissions for the same receipt before touching inventory.
+  perform pg_advisory_xact_lock(hashtextextended(p_receipt_path, 0));
+  select public_code, customer_phone into existing_code, existing_phone
+  from public.orders where receipt_path = p_receipt_path;
+  if existing_code is not null then
+    if existing_phone = normalized_phone then return existing_code; end if;
+    raise exception 'This receipt has already been submitted';
+  end if;
 
   select count(*), count(distinct (coalesce(value->>'product_id', value->>'id')))
     into item_count, quantity
@@ -107,15 +118,12 @@ begin
   if p_total <> calculated_total then raise exception 'Submitted total does not match current prices'; end if;
 
   loop
-      generated_code := 'ORD-' || upper(encode(gen_random_bytes(12), 'hex'));
-    begin
-      insert into public.orders (public_code, customer_name, customer_phone, customer_instagram, items, subtotal, shipping_fee, total, shipping_address, receipt_path)
-      values (generated_code, btrim(p_customer_name), normalized_phone, nullif(btrim(p_customer_instagram), ''), trusted_items, calculated_subtotal, delivery, calculated_total, p_shipping_address, p_receipt_path)
-      returning id into inserted_id;
-      exit;
-    exception when unique_violation then
-      -- Retry only the public-code collision; all other constraints still fail.
-    end;
+    generated_code := 'ORD-' || upper(encode(gen_random_bytes(12), 'hex'));
+    insert into public.orders (public_code, customer_name, customer_phone, customer_instagram, items, subtotal, shipping_fee, total, shipping_address, receipt_path)
+    values (generated_code, btrim(p_customer_name), normalized_phone, nullif(btrim(p_customer_instagram), ''), trusted_items, calculated_subtotal, delivery, calculated_total, p_shipping_address, p_receipt_path)
+    on conflict (public_code) do nothing
+    returning id into inserted_id;
+    if inserted_id is not null then exit; end if;
   end loop;
   return generated_code;
 end;

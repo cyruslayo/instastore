@@ -22,7 +22,7 @@ export default function OrderDetailsModal({
   const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
   const [receiptLoading, setReceiptLoading] = useState(false);
   const [receiptError, setReceiptError] = useState<string | null>(null);
-  const receiptPath = order?.receipt_path || order?.receipt_url;
+  const receiptPath = order?.receipt_path;
   const isPdfReceipt = typeof receiptPath === "string" && receiptPath.toLowerCase().endsWith(".pdf");
 
   useEffect(() => {
@@ -68,7 +68,7 @@ export default function OrderDetailsModal({
     return () => {
       cancelled = true;
     };
-  }, [order?.id, order?.receipt_path, order?.receipt_url]);
+  }, [order?.id, order?.receipt_path]);
 
   if (!isOpen || !order) return null;
 
@@ -80,6 +80,14 @@ export default function OrderDetailsModal({
         0,
       )
     : Math.max(Number(order.total || 0) - shippingFee, 0);
+
+  const statusOptions: string[] = order.status === "Pending Verification"
+    ? ["Processing", "Cancelled"]
+    : order.status === "Processing"
+      ? ["Shipped", "Cancelled"]
+      : order.status === "Shipped"
+        ? ["Fulfilled"]
+        : [];
 
   const handleUpdateStatus = async () => {
     setError(null);
@@ -157,7 +165,7 @@ export default function OrderDetailsModal({
                 Customer
               </p>
               <div className="font-body-md text-primary font-medium text-sm break-all space-y-1">
-                <p>{order.customer_name || order.user_id || "Guest customer"}</p>
+                <p>{order.customer_name || "Guest customer"}</p>
                 {order.customer_phone && <p>{order.customer_phone}</p>}
                 {order.customer_instagram && <p>{order.customer_instagram}</p>}
               </div>
@@ -270,16 +278,10 @@ export default function OrderDetailsModal({
 
           <div className="space-y-3 pt-4 border-t border-outline-variant/50">
             <p className="font-mono text-xs uppercase tracking-wider text-primary font-bold">
-              Update Order Status
+              {statusOptions.length ? "Update Order Status" : "Order Status"}
             </p>
             <div className="flex flex-wrap gap-2">
-              {[
-                "Pending Verification",
-                "Processing",
-                "Shipped",
-                "Fulfilled",
-                "Cancelled",
-              ].map((s) => (
+              {statusOptions.map((s) => (
                 <button
                   key={s}
                   type="button"

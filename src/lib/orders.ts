@@ -1,10 +1,5 @@
 import { getSupabase } from "./supabase";
-import type {
-  CustomerOrderStatus,
-  LegacyOrderItem,
-  MemberOrder,
-  ShippingAddress,
-} from "./types";
+import type { CustomerOrderStatus, ShippingAddress } from "./types";
 
 const RECEIPT_MIME_TYPES = new Set([
   "image/jpeg",
@@ -55,7 +50,7 @@ export async function createStoreOrder(payload: {
   shippingAddress: ShippingAddress;
   receiptPath: string;
 }): Promise<string> {
-  const { data, error } = await getSupabase().rpc("create_store_order", {
+  const rpcPayload = {
     p_customer_name: payload.customerName,
     p_customer_phone: payload.customerPhone,
     p_customer_instagram: payload.customerInstagram ?? null,
@@ -63,10 +58,21 @@ export async function createStoreOrder(payload: {
     p_total: payload.total,
     p_shipping_address: payload.shippingAddress,
     p_receipt_path: payload.receiptPath,
-  });
-  if (error) throw error;
-  if (!data) throw new Error("Order creation returned no tracking code.");
-  return data as string;
+  };
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const { data, error } = await getSupabase().rpc("create_store_order", rpcPayload);
+      if (error) lastError = error;
+      else if (data) return data as string;
+      else lastError = new Error("Order creation returned no tracking code.");
+    } catch (error) {
+      lastError = error;
+    }
+    if (!isTransientNetworkError(lastError) || attempt === 3) throw lastError;
+    await wait(250 * attempt);
+  }
+  throw lastError ?? new Error("Order creation failed.");
 }
 
 export async function getOrderStatus(
@@ -91,50 +97,6 @@ export async function setOrderStatus(
   });
   if (error) throw error;
   return data;
-}
-
-// LEGACY - REMOVE IN MEMBERSHIP DECOUPLING PHASE. Adapts the Phase-1 checkout
-// shape to the clean RPC without trusting its client-side prices or snapshots.
-export async function createOrder(payload: {
-  items: LegacyOrderItem[];
-  total: number;
-  shippingAddress: {
-    instagramHandle?: string;
-    phone: string;
-    address: string;
-    city?: string;
-    state?: string;
-  };
-  receiptUrl: string;
-}): Promise<string> {
-  return createStoreOrder({
-    customerName: payload.shippingAddress.instagramHandle || "Guest customer",
-    customerPhone: payload.shippingAddress.phone,
-    customerInstagram: payload.shippingAddress.instagramHandle,
-    items: payload.items.map((item) => ({
-      product_id: item.id,
-      quantity: item.quantity,
-    })),
-    total: payload.total,
-    shippingAddress: {
-      fullName: payload.shippingAddress.instagramHandle || "Guest customer",
-      phone: payload.shippingAddress.phone,
-      address: payload.shippingAddress.address,
-      city: payload.shippingAddress.city || "",
-      state: payload.shippingAddress.state || "",
-      instagramHandle: payload.shippingAddress.instagramHandle,
-    },
-    receiptPath: payload.receiptUrl,
-  });
-}
-
-// LEGACY - REMOVE IN MEMBERSHIP DECOUPLING PHASE. The clean schema intentionally
-// has no member order-history RPC; this remains only for the old UI boundary.
-export async function getMemberOrders(
-  _instagramHandle: string,
-  _phone: string,
-): Promise<MemberOrder[]> {
-  return [];
 }
 
 export async function uploadReceipt(file: File): Promise<string> {

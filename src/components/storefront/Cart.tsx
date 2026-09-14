@@ -1,165 +1,45 @@
 'use client';
+import { useEffect, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { cartItems, getCartLineKey, removeItem, updateQuantity, cartTotal, cartCount } from '@/store/cart';
 import { formatNaira } from '@/lib/utils';
-import { FadeIn, StaggerContainer, StaggerItem } from '@/components/FadeIn';
+import { fetchLiveSiteSettings } from '@/lib/siteSettings';
 import { useHydrated } from '@/lib/useHydrated';
-import OrderHistory from '@/components/storefront/OrderHistory';
-import { FIXED_DELIVERY_FEE_NAIRA } from '@/lib/commerce';
 
 export default function Cart() {
-  const isHydrated = useHydrated();
-  const rawItems = useStore(cartItems);
-  const rawTotal = useStore(cartTotal);
-  const rawCount = useStore(cartCount);
+  const hydrated = useHydrated();
+  const items = useStore(cartItems);
+  const subtotal = useStore(cartTotal);
+  const count = useStore(cartCount);
+  const [deliveryFee, setDeliveryFee] = useState<number | null>(null);
 
-  const items = isHydrated ? rawItems : [];
-  const subtotal = isHydrated ? rawTotal : 0;
-  const deliveryFee = items.length > 0 ? FIXED_DELIVERY_FEE_NAIRA : 0;
-  const total = subtotal + deliveryFee;
-  const count = isHydrated ? rawCount : 0;
+  useEffect(() => {
+    fetchLiveSiteSettings().then((settings) => setDeliveryFee(Number(settings.deliveryFee ?? 0))).catch(() => setDeliveryFee(null));
+  }, []);
+
+  const visibleItems = hydrated ? items : [];
+  const visibleSubtotal = hydrated ? subtotal : 0;
+  const total = deliveryFee === null ? null : visibleSubtotal + deliveryFee;
 
   return (
     <main className="flex-1 w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop pt-24 md:pt-32 pb-32">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter lg:gap-margin-desktop">
-        <div className="lg:col-span-7 flex flex-col gap-stack-lg">
-          <FadeIn>
-            <div className="flex items-baseline justify-between mb-stack-sm border-b border-surface-variant pb-stack-sm">
-              <h2 className="font-headline-sm text-headline-sm text-on-surface">Your Bag ({count} items)</h2>
+        <div className="lg:col-span-7">
+          <div className="flex items-baseline justify-between mb-stack-sm border-b border-surface-variant pb-stack-sm"><h1 className="font-headline-sm text-headline-sm text-on-surface">Your Bag ({hydrated ? count : 0} items)</h1></div>
+          {visibleItems.length === 0 ? <p className="font-body-md text-on-surface-variant py-8">Your bag is empty.</p> : <div>{visibleItems.map((item) => <div key={getCartLineKey(item)} className="flex gap-stack-md py-stack-md border-b border-outline-variant/30">
+            <div className="w-24 md:w-32 aspect-[3/4] shrink-0 bg-surface-container rounded-lg overflow-hidden">{item.image && <img src={item.image} alt={item.name} referrerPolicy="no-referrer" loading="lazy" className="w-full h-full object-cover" />}</div>
+            <div className="flex-1"><div className="flex justify-between items-start"><h2 className="font-body-lg text-body-lg text-on-surface">{item.name}</h2><button type="button" onClick={() => removeItem(item.product_id)} aria-label={`Remove ${item.name} from bag`} className="touch-target text-on-surface-variant hover:text-error"><XIcon /></button></div>
+              <p className="text-sm text-on-surface-variant">{item.category}{item.sku ? ` · SKU ${item.sku}` : ''}</p><p className="font-headline-sm text-headline-sm text-on-surface mt-2">{formatNaira(item.price)}</p>
+              <div className="flex items-center border border-outline-variant rounded-full px-3 py-1 w-fit mt-4"><button type="button" onClick={() => updateQuantity(item.product_id, -1)} aria-label="Decrease quantity"><MinusIcon /></button><span className="w-8 text-center">{item.quantity}</span><button type="button" disabled={item.quantity >= (item.inventory ?? Infinity)} onClick={() => updateQuantity(item.product_id, 1)} aria-label="Increase quantity"><PlusIcon /></button></div>
             </div>
-          </FadeIn>
-
-          {items.length === 0 ? (
-            <FadeIn delay={0.1}>
-              <p className="font-body-md text-on-surface-variant py-8">Your bag is empty.</p>
-            </FadeIn>
-          ) : (
-            <StaggerContainer>
-              {items.map((item) => (
-                <StaggerItem key={getCartLineKey(item)} className="flex gap-stack-md py-stack-md relative group">
-                  <div className="w-24 md:w-32 aspect-[3/4] shrink-0 bg-surface-container rounded-lg overflow-hidden relative">
-                    <img src={item.image} alt={item.name} referrerPolicy="no-referrer" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
-                  </div>
-
-                  <div className="flex-1 flex flex-col justify-between py-1">
-                    <div>
-                      <div className="flex justify-between items-start">
-                        <h3 className="font-body-lg text-body-lg text-on-surface pr-4">{item.name}</h3>
-                        <button onClick={() => removeItem(getCartLineKey(item))} aria-label={`Remove ${item.name} from bag`} className="touch-target flex items-center justify-center text-on-surface-variant hover:text-error transition-colors p-1 -mt-1 -mr-1">
-                          <XIcon />
-                        </button>
-                      </div>
-                      {(item.strength_mg != null || item.bottle_size_ml != null || item.strain_name || item.batch_code) && (
-                        <div className="font-label-sm text-label-sm text-on-surface-variant mt-1 space-y-0.5">
-                          {(item.strength_mg != null || item.bottle_size_ml != null) && <p>{item.strength_mg != null ? `${item.strength_mg} mg` : null}{item.strength_mg != null && item.bottle_size_ml != null ? ' / ' : null}{item.bottle_size_ml != null ? `${item.bottle_size_ml} ml` : null}</p>}
-                          {item.strain_name && <p>Strain: {item.strain_name}</p>}
-                          {item.batch_code && <p>Batch: {item.batch_code}</p>}
-                        </div>
-                      )}
-                      <p className="font-headline-sm text-headline-sm text-on-surface mt-2">{formatNaira(item.price)}</p>
-                    </div>
-
-                    <div className="flex items-center gap-4 mt-4">
-                      <div className="flex items-center border border-outline-variant rounded-full px-3 py-1">
-                        <button onClick={() => updateQuantity(getCartLineKey(item), -1)} aria-label={`Decrease quantity of ${item.name}`} className="touch-target flex items-center justify-center text-on-surface-variant hover:text-primary p-1">
-                          <MinusIcon />
-                        </button>
-                        <span className="font-body-md text-body-md text-on-surface w-8 text-center">{item.quantity}</span>
-                        <button onClick={() => updateQuantity(getCartLineKey(item), 1)} aria-label={`Increase quantity of ${item.name}`} className="touch-target flex items-center justify-center text-on-surface-variant hover:text-primary p-1">
-                          <PlusIcon />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </StaggerItem>
-              ))}
-            </StaggerContainer>
-          )}
-
+          </div>)}</div>}
         </div>
-
-        <div className="lg:col-span-5 relative mt-section-gap lg:mt-0">
-          <div className="sticky top-24">
-            <FadeIn delay={0.1}>
-              <div className="bg-surface-container-low rounded-xl p-stack-lg border border-surface-variant">
-                <h2 className="font-headline-sm text-headline-sm text-on-surface mb-stack-lg border-b border-outline-variant pb-stack-sm">Order Summary</h2>
-                <div className="flex flex-col gap-stack-sm font-body-md text-body-md text-on-surface-variant mb-stack-lg">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span className="text-on-surface">{formatNaira(subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Delivery</span>
-                    <span className="text-on-surface">{formatNaira(deliveryFee)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Tax estimate</span>
-                    <span className="text-on-surface">{formatNaira(0)}</span>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center mb-stack-lg border-t border-outline-variant pt-stack-md">
-                  <span className="font-headline-sm text-headline-sm text-on-surface">Total</span>
-                  <span className="font-headline-sm text-headline-sm text-on-surface">{formatNaira(total)}</span>
-                </div>
-                <a href="/checkout" className="w-full bg-primary text-on-primary py-4 rounded-full font-label-sm text-label-sm uppercase tracking-widest hover:scale-102 active:scale-98 transition-transform duration-300 flex items-center justify-center gap-2">
-                  Checkout
-                  <ArrowRightIcon />
-                </a>
-                <div className="mt-stack-md flex items-center justify-center gap-2 text-on-surface-variant opacity-70">
-                  <LockIcon />
-                  <span className="font-label-sm text-label-sm">Secure Checkout</span>
-                </div>
-              </div>
-            </FadeIn>
-          </div>
-        </div>
+        <div className="lg:col-span-5 relative mt-section-gap lg:mt-0"><div className="sticky top-24 bg-surface-container-low rounded-xl p-stack-lg border border-surface-variant"><h2 className="font-headline-sm text-headline-sm text-on-surface mb-stack-lg border-b border-outline-variant pb-stack-sm">Order Summary</h2><div className="flex flex-col gap-stack-sm text-on-surface-variant mb-stack-lg"><div className="flex justify-between"><span>Subtotal</span><span>{formatNaira(visibleSubtotal)}</span></div><div className="flex justify-between"><span>Delivery</span><span>{deliveryFee === null ? 'Unavailable' : formatNaira(deliveryFee)}</span></div></div><div className="flex justify-between items-center mb-stack-lg border-t border-outline-variant pt-stack-md"><span className="font-headline-sm text-headline-sm">Total</span><span className="font-headline-sm text-headline-sm">{total === null ? 'Unavailable' : formatNaira(total)}</span></div><a aria-disabled={total === null || visibleItems.length === 0} className={`w-full bg-primary text-on-primary py-4 rounded-full font-label-sm uppercase tracking-widest flex items-center justify-center gap-2 ${total === null || visibleItems.length === 0 ? 'pointer-events-none opacity-50' : ''}`} href="/checkout">Checkout <ArrowRightIcon /></a></div></div>
       </div>
-
-      <OrderHistory />
     </main>
   );
 }
-
-function XIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 6 6 18" />
-      <path d="m6 6 12 12" />
-    </svg>
-  );
-}
-
-function MinusIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 12h14" />
-    </svg>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 12h14" />
-      <path d="M12 5v14" />
-    </svg>
-  );
-}
-
-function ArrowRightIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 12h14" />
-      <path d="m12 5 7 7-7 7" />
-    </svg>
-  );
-}
-
-function LockIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-    </svg>
-  );
-}
+function XIcon() { return <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12" /></svg>; }
+function MinusIcon() { return <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14" /></svg>; }
+function PlusIcon() { return <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5v14" /></svg>; }
+function ArrowRightIcon() { return <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14m-7-7 7 7-7 7" /></svg>; }

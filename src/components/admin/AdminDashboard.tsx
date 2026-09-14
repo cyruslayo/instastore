@@ -18,7 +18,6 @@ interface DashboardMetrics {
   orderValue: number;
   totalOrders: number;
   activeProducts: number;
-  pendingApplications: number;
   recentOrders: DashboardOrder[];
 }
 
@@ -26,7 +25,6 @@ const EMPTY_METRICS: DashboardMetrics = {
   orderValue: 0,
   totalOrders: 0,
   activeProducts: 0,
-  pendingApplications: 0,
   recentOrders: [],
 };
 
@@ -53,7 +51,6 @@ export default function AdminDashboard() {
         orderValue: liveOrders.reduce((sum, order) => sum + Number(order.total || 0), 0),
         totalOrders: orders.length,
         activeProducts: productsResult.data?.length || 0,
-        pendingApplications: 0,
         recentOrders: liveOrders.slice(0, 5),
       });
     } catch (loadError) {
@@ -73,7 +70,6 @@ export default function AdminDashboard() {
     { label: 'Order Value', value: formatNaira(metrics.orderValue), icon: '💵' },
     { label: 'Total Orders', value: metrics.totalOrders.toString(), icon: '🛒' },
     { label: 'Active Products', value: metrics.activeProducts.toString(), icon: '📦' },
-    { label: 'Pending Applications', value: metrics.pendingApplications.toString(), icon: '📋' },
   ];
 
   return (

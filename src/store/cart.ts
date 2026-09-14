@@ -1,45 +1,30 @@
 import { atom, computed } from 'nanostores';
-import { accessState } from './access';
 
 export type CartItem = {
-  id: string;
+  product_id: string;
   name: string;
-  variant: string;
   price: number;
   quantity: number;
-  image: string;
-  strength_mg?: number | null;
-  bottle_size_ml?: number | null;
-  strain_name?: string | null;
-  batch_code?: string | null;
+  image?: string;
+  category: string;
+  sku?: string | null;
+  inventory?: number;
 };
 
 export function getCartLineKey(item: CartItem): string {
-  return JSON.stringify([
-    item.id,
-    item.variant ?? '',
-    item.strength_mg ?? '',
-    item.bottle_size_ml ?? '',
-    item.strain_name ?? '',
-    item.batch_code ?? '',
-    item.price ?? '',
-  ]);
+  return item.product_id;
 }
 
-const CART_STORAGE_KEY = 'botanica_cart_items';
+const CART_STORAGE_KEY = 'instastore_cart_items';
 
 function getInitialCart(): CartItem[] {
-  if (typeof window !== 'undefined') {
-    try {
-      const stored = localStorage.getItem(CART_STORAGE_KEY);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch {
-      // Ignore storage parse errors
-    }
+  if (typeof window === 'undefined') return [];
+  try {
+    const stored = localStorage.getItem(CART_STORAGE_KEY);
+    return stored ? (JSON.parse(stored) as CartItem[]) : [];
+  } catch {
+    return [];
   }
-  return [];
 }
 
 export const cartItems = atom<CartItem[]>(getInitialCart());
@@ -49,54 +34,37 @@ if (typeof window !== 'undefined') {
     try {
       localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
     } catch {
-      // Ignore storage write errors
+      // Storage availability must not break cart behavior.
     }
   });
 }
 
-export const addItem = (item: CartItem): boolean => {
-  const access = accessState.get();
-  if (access.status !== 'approved') {
-    return false;
-  }
-
+export const addItem = (item: CartItem): void => {
   const current = cartItems.get();
-  const itemKey = getCartLineKey(item);
-  const existing = current.find((i) => getCartLineKey(i) === itemKey);
+  const existing = current.find((candidate) => candidate.product_id === item.product_id);
   if (existing) {
-    cartItems.set(
-      current.map((i) =>
-        getCartLineKey(i) === itemKey ? { ...i, quantity: i.quantity + item.quantity } : i
-      )
-    );
-  } else {
-    cartItems.set([...current, item]);
+    cartItems.set(current.map((candidate) =>
+      candidate.product_id === item.product_id
+        ? { ...candidate, quantity: Math.min(candidate.quantity + item.quantity, candidate.inventory ?? Infinity) }
+        : candidate,
+    ));
+    return;
   }
-  return true;
+  cartItems.set([...current, item]);
 };
 
-export const removeItem = (lineKey: string) => {
-  cartItems.set(cartItems.get().filter((item) => getCartLineKey(item) !== lineKey));
+export const removeItem = (productId: string) => {
+  cartItems.set(cartItems.get().filter((item) => item.product_id !== productId));
 };
 
-export const updateQuantity = (lineKey: string, delta: number) => {
-  cartItems.set(
-    cartItems.get().map((i) => {
-      if (getCartLineKey(i) === lineKey) {
-        const newQ = Math.max(1, i.quantity + delta);
-        return { ...i, quantity: newQ };
-      }
-      return i;
-    })
-  );
+export const updateQuantity = (productId: string, delta: number) => {
+  cartItems.set(cartItems.get().map((item) => {
+    if (item.product_id !== productId) return item;
+    const maximum = item.inventory ?? Infinity;
+    return { ...item, quantity: Math.min(maximum, Math.max(1, item.quantity + delta)) };
+  }));
 };
 
 export const clearCart = () => cartItems.set([]);
-
-export const cartCount = computed(cartItems, (items) =>
-  items.reduce((acc, item) => acc + item.quantity, 0)
-);
-
-export const cartTotal = computed(cartItems, (items) =>
-  items.reduce((acc, item) => acc + item.price * item.quantity, 0)
-);
+export const cartCount = computed(cartItems, (items) => items.reduce((total, item) => total + item.quantity, 0));
+export const cartTotal = computed(cartItems, (items) => items.reduce((total, item) => total + item.price * item.quantity, 0));

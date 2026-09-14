@@ -7,8 +7,6 @@ import {
   Menu,
   X,
   Sliders,
-  UserCheck,
-  Users,
   LogOut,
   ChevronRight,
 } from 'lucide-react';
@@ -31,9 +29,7 @@ export default function AdminBottomNav({ pathname }: AdminBottomNavProps) {
   ];
 
   const secondaryItems = [
-    { href: '/admin/content', label: 'Site Content (CMS)', description: 'Banners, announcements, bank transfer', icon: Sliders, active: pathname.startsWith('/admin/content') },
-    { href: '/admin/referrals', label: 'Referrals & Access', description: 'Member applications & invites', icon: UserCheck, active: pathname.startsWith('/admin/referrals') },
-    { href: '/admin/customers', label: 'Customer Directory', description: 'Profiles and permissions', icon: Users, active: pathname.startsWith('/admin/customers') },
+    { href: '/admin/content', label: 'Store Settings', description: 'Announcements and bank transfer', icon: Sliders, active: pathname.startsWith('/admin/content') },
   ];
 
   const isMoreActive = secondaryItems.some((item) => item.active);

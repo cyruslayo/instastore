@@ -57,7 +57,7 @@ create table public.orders (
   total numeric(12,2) not null check (total >= 0),
   status text not null default 'Pending Verification' check (status in ('Pending Verification', 'Processing', 'Shipped', 'Fulfilled', 'Cancelled')),
   shipping_address jsonb not null check (jsonb_typeof(shipping_address) = 'object'),
-  receipt_path text not null check (receipt_path ~ '^receipts/[A-Za-z0-9-]{32,36}\.(jpg|jpeg|png|pdf)$'),
+  receipt_path text not null unique check (receipt_path ~ '^receipts/[A-Za-z0-9-]{32,36}\.(jpg|jpeg|png|pdf)$'),
   inventory_restocked boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

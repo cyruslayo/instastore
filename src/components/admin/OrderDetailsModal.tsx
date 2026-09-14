@@ -17,13 +17,15 @@ export default function OrderDetailsModal({
   onSaved,
 }: OrderDetailsModalProps) {
   const [isSaving, setIsSaving] = useState(false);
-  const [status, setStatus] = useState(order?.status || "Processing");
+  const [nextStatus, setNextStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
   const [receiptLoading, setReceiptLoading] = useState(false);
   const [receiptError, setReceiptError] = useState<string | null>(null);
   const receiptPath = order?.receipt_path;
-  const isPdfReceipt = typeof receiptPath === "string" && receiptPath.toLowerCase().endsWith(".pdf");
+  const isPdfReceipt =
+    typeof receiptPath === "string" &&
+    receiptPath.toLowerCase().endsWith(".pdf");
 
   useEffect(() => {
     let cancelled = false;
@@ -70,6 +72,11 @@ export default function OrderDetailsModal({
     };
   }, [order?.id, order?.receipt_path]);
 
+  useEffect(() => {
+    setNextStatus(null);
+    setError(null);
+  }, [order?.id, order?.status]);
+
   if (!isOpen || !order) return null;
 
   const shippingFee = Number(order.shipping_fee ?? 0);
@@ -81,20 +88,22 @@ export default function OrderDetailsModal({
       )
     : Math.max(Number(order.total || 0) - shippingFee, 0);
 
-  const statusOptions: string[] = order.status === "Pending Verification"
-    ? ["Processing", "Cancelled"]
-    : order.status === "Processing"
-      ? ["Shipped", "Cancelled"]
-      : order.status === "Shipped"
-        ? ["Fulfilled"]
-        : [];
+  const statusOptions: string[] =
+    order.status === "Pending Verification"
+      ? ["Processing", "Cancelled"]
+      : order.status === "Processing"
+        ? ["Shipped", "Cancelled"]
+        : order.status === "Shipped"
+          ? ["Fulfilled"]
+          : [];
 
   const handleUpdateStatus = async () => {
     setError(null);
     setIsSaving(true);
     try {
+      if (!nextStatus) return;
       const { setOrderStatus } = await import("@/lib/orders");
-      await setOrderStatus(order.id, status);
+      await setOrderStatus(order.id, nextStatus);
       onSaved();
       onClose();
     } catch (err: any) {
@@ -177,13 +186,39 @@ export default function OrderDetailsModal({
                   Delivery Destination
                 </p>
                 <div className="text-xs sm:text-sm text-on-surface space-y-0.5">
-                  {order.shipping_address.fullName && <p>{order.shipping_address.fullName}</p>}
-                  {order.shipping_address.phone && <p className="text-on-surface-variant font-mono">{order.shipping_address.phone}</p>}
-                  {order.shipping_address.instagramHandle && <p className="font-bold text-primary font-mono">{order.shipping_address.instagramHandle}</p>}
-                  {order.shipping_address.address && <p>{order.shipping_address.address}</p>}
-                  {order.shipping_address.address2 && <p>{order.shipping_address.address2}</p>}
-                  {order.shipping_address.landmark && <p>Landmark: {order.shipping_address.landmark}</p>}
-                  {(order.shipping_address.city || order.shipping_address.state) && <p>{[order.shipping_address.city, order.shipping_address.state].filter(Boolean).join(", ")}</p>}
+                  {order.shipping_address.fullName && (
+                    <p>{order.shipping_address.fullName}</p>
+                  )}
+                  {order.shipping_address.phone && (
+                    <p className="text-on-surface-variant font-mono">
+                      {order.shipping_address.phone}
+                    </p>
+                  )}
+                  {order.shipping_address.instagramHandle && (
+                    <p className="font-bold text-primary font-mono">
+                      {order.shipping_address.instagramHandle}
+                    </p>
+                  )}
+                  {order.shipping_address.address && (
+                    <p>{order.shipping_address.address}</p>
+                  )}
+                  {order.shipping_address.address2 && (
+                    <p>{order.shipping_address.address2}</p>
+                  )}
+                  {order.shipping_address.landmark && (
+                    <p>Landmark: {order.shipping_address.landmark}</p>
+                  )}
+                  {(order.shipping_address.city ||
+                    order.shipping_address.state) && (
+                    <p>
+                      {[
+                        order.shipping_address.city,
+                        order.shipping_address.state,
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -220,7 +255,9 @@ export default function OrderDetailsModal({
                           Qty: {item.quantity}
                         </p>
                         {item.sku && (
-                          <p className="text-[11px] font-mono text-on-surface-variant">SKU: {item.sku}</p>
+                          <p className="text-[11px] font-mono text-on-surface-variant">
+                            SKU: {item.sku}
+                          </p>
                         )}
                       </div>
                     </div>
@@ -257,37 +294,59 @@ export default function OrderDetailsModal({
                 Bank Payment Receipt
               </p>
               <div className="bg-surface-container-low border border-outline-variant/60 rounded-xl p-3 flex flex-col items-center">
-                {receiptLoading && <p className="py-8 text-sm text-on-surface-variant">Loading receipt…</p>}
+                {receiptLoading && (
+                  <p className="py-8 text-sm text-on-surface-variant">
+                    Loading receipt…
+                  </p>
+                )}
                 {!receiptLoading && receiptUrl && isPdfReceipt && (
-                  <a href={receiptUrl} target="_blank" rel="noreferrer" className="text-secondary font-mono text-xs font-bold hover:underline">
+                  <a
+                    href={receiptUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-secondary font-mono text-xs font-bold hover:underline"
+                  >
                     View receipt PDF ↗
                   </a>
                 )}
                 {!receiptLoading && receiptUrl && !isPdfReceipt && (
                   <>
-                    <img src={receiptUrl} alt="Bank Transfer Receipt" className="max-w-full max-h-56 object-contain rounded-lg mb-2" />
-                    <a href={receiptUrl} target="_blank" rel="noreferrer" className="text-secondary font-mono text-xs font-bold hover:underline">
+                    <img
+                      src={receiptUrl}
+                      alt="Bank Transfer Receipt"
+                      className="max-w-full max-h-56 object-contain rounded-lg mb-2"
+                    />
+                    <a
+                      href={receiptUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-secondary font-mono text-xs font-bold hover:underline"
+                    >
                       View Full Resolution Receipt ↗
                     </a>
                   </>
                 )}
-                {!receiptLoading && !receiptUrl && <p className="py-8 text-sm text-error">{receiptError || "Receipt could not be loaded."}</p>}
+                {!receiptLoading && !receiptUrl && (
+                  <p className="py-8 text-sm text-error">
+                    {receiptError || "Receipt could not be loaded."}
+                  </p>
+                )}
               </div>
             </div>
           )}
 
           <div className="space-y-3 pt-4 border-t border-outline-variant/50">
             <p className="font-mono text-xs uppercase tracking-wider text-primary font-bold">
-              {statusOptions.length ? "Update Order Status" : "Order Status"}
+              Current status: {order.status}
             </p>
             <div className="flex flex-wrap gap-2">
               {statusOptions.map((s) => (
                 <button
                   key={s}
                   type="button"
-                  onClick={() => setStatus(s)}
+                  onClick={() => setNextStatus(s)}
                   className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold border transition-colors cursor-pointer ${
-                    status === s
+                    nextStatus === s
                       ? "bg-primary text-on-primary border-primary shadow-xs"
                       : "bg-surface border-outline-variant/70 text-on-surface hover:bg-surface-container-low"
                   }`}
@@ -310,7 +369,7 @@ export default function OrderDetailsModal({
           </button>
           <button
             onClick={handleUpdateStatus}
-            disabled={isSaving || status === order.status}
+            disabled={isSaving || nextStatus === null}
             className="px-6 py-2.5 rounded-xl font-label-sm text-xs uppercase tracking-wider font-bold bg-primary text-on-primary hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-xs"
           >
             {isSaving ? "Updating..." : "Save Changes"}

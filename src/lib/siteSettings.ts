@@ -45,13 +45,21 @@ function isSupabaseConfigured(): boolean {
   try {
     const url = import.meta.env.PUBLIC_SUPABASE_URL;
     const anonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
-    return Boolean(url && anonKey && !url.includes("your-project") && !url.includes("placeholder") && anonKey !== "your-anon-key");
+    return Boolean(
+      url &&
+        anonKey &&
+        !url.includes("your-project") &&
+        !url.includes("placeholder") &&
+        anonKey !== "your-anon-key",
+    );
   } catch {
     return false;
   }
 }
 
-function normalise(value: Partial<SiteSettings> | null | undefined): SiteSettings {
+function normalise(
+  value: Partial<SiteSettings> | null | undefined,
+): SiteSettings {
   const fee = Number(value?.deliveryFee ?? DEFAULT_SITE_SETTINGS.deliveryFee);
   return {
     ...DEFAULT_SITE_SETTINGS,
@@ -59,34 +67,47 @@ function normalise(value: Partial<SiteSettings> | null | undefined): SiteSetting
     currency: "NGN",
     deliveryFee: Number.isFinite(fee) && fee >= 0 ? fee : 0,
     bank: { ...DEFAULT_SITE_SETTINGS.bank, ...(value?.bank || {}) },
-    announcement: { ...DEFAULT_SITE_SETTINGS.announcement, ...(value?.announcement || {}) },
+    announcement: {
+      ...DEFAULT_SITE_SETTINGS.announcement,
+      ...(value?.announcement || {}),
+    },
   };
 }
 
-function fromRow(row: Record<string, unknown> | null | undefined): SiteSettings {
-  return normalise(row ? {
-    storeName: String(row.store_name ?? ""),
-    tagline: String(row.tagline ?? ""),
-    logoUrl: String(row.logo_url ?? ""),
-    instagramHandle: String(row.instagram_handle ?? ""),
-    whatsappNumber: String(row.whatsapp_number ?? ""),
-    currency: "NGN",
-    deliveryFee: Number(row.delivery_fee ?? 0),
-    bank: {
-      bankName: String(row.bank_name ?? ""),
-      accountName: String(row.account_name ?? ""),
-      accountNumber: String(row.account_number ?? ""),
-    },
-    announcement: {
-      enabled: Boolean(row.announcement_enabled),
-      message: String(row.announcement_text ?? ""),
-    },
-  } : null);
+function fromRow(
+  row: Record<string, unknown> | null | undefined,
+): SiteSettings {
+  return normalise(
+    row
+      ? {
+          storeName: String(row.store_name ?? ""),
+          tagline: String(row.tagline ?? ""),
+          logoUrl: String(row.logo_url ?? ""),
+          instagramHandle: String(row.instagram_handle ?? ""),
+          whatsappNumber: String(row.whatsapp_number ?? ""),
+          currency: "NGN",
+          deliveryFee: Number(row.delivery_fee ?? 0),
+          bank: {
+            bankName: String(row.bank_name ?? ""),
+            accountName: String(row.account_name ?? ""),
+            accountNumber: String(row.account_number ?? ""),
+          },
+          announcement: {
+            enabled: Boolean(row.announcement_enabled),
+            message: String(row.announcement_text ?? ""),
+          },
+        }
+      : null,
+  );
 }
 
 function cacheSiteSettings(settings: SiteSettings): void {
   if (typeof window === "undefined") return;
-  try { localStorage.setItem(LOCAL_SITE_SETTINGS_KEY, JSON.stringify(settings)); } catch { /* Cache is optional. */ }
+  try {
+    localStorage.setItem(LOCAL_SITE_SETTINGS_KEY, JSON.stringify(settings));
+  } catch {
+    /* Cache is optional. */
+  }
 }
 
 export function getSiteSettings(): SiteSettings {
@@ -94,40 +115,55 @@ export function getSiteSettings(): SiteSettings {
     try {
       const stored = localStorage.getItem(LOCAL_SITE_SETTINGS_KEY);
       if (stored) return normalise(JSON.parse(stored));
-    } catch { /* Use safe defaults. */ }
+    } catch {
+      /* Use safe defaults. */
+    }
   }
   return DEFAULT_SITE_SETTINGS;
 }
 
 export async function fetchLiveSiteSettings(): Promise<SiteSettings> {
-  if (!isSupabaseConfigured()) throw new Error("Supabase is not configured for live site settings.");
+  if (!isSupabaseConfigured())
+    throw new Error("Supabase is not configured for live site settings.");
   const { data, error } = await getSupabase().rpc("get_storefront_settings");
   if (error) throw error;
-  const settings = fromRow((Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null);
+  const settings = fromRow(
+    (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null,
+  );
   cacheSiteSettings(settings);
   return settings;
 }
 
-export async function saveSiteSettings(settings: SiteSettings): Promise<SiteSettings> {
-  if (!isSupabaseConfigured()) throw new Error("Supabase is not configured for live site settings.");
+export async function saveSiteSettings(
+  settings: SiteSettings,
+): Promise<SiteSettings> {
+  if (typeof settings.deliveryFee !== "number" || !Number.isFinite(settings.deliveryFee) || settings.deliveryFee < 0)
+    throw new Error("Delivery fee must be a non-negative number.");
+  if (!isSupabaseConfigured())
+    throw new Error("Supabase is not configured for live site settings.");
   const updated = normalise(settings);
-  if (!Number.isFinite(updated.deliveryFee) || updated.deliveryFee < 0) throw new Error("Delivery fee must be a non-negative number.");
-  const { error } = await getSupabase().from("store_settings").update({
-    store_name: updated.storeName,
-    tagline: updated.tagline,
-    logo_url: updated.logoUrl,
-    instagram_handle: updated.instagramHandle,
-    whatsapp_number: updated.whatsappNumber,
-    currency: "NGN",
-    delivery_fee: updated.deliveryFee,
-    bank_name: updated.bank.bankName,
-    account_name: updated.bank.accountName,
-    account_number: updated.bank.accountNumber,
-    announcement_enabled: updated.announcement.enabled,
-    announcement_text: updated.announcement.message,
-  }).eq("id", true);
+  const { error } = await getSupabase()
+    .from("store_settings")
+    .update({
+      store_name: updated.storeName,
+      tagline: updated.tagline,
+      logo_url: updated.logoUrl,
+      instagram_handle: updated.instagramHandle,
+      whatsapp_number: updated.whatsappNumber,
+      currency: "NGN",
+      delivery_fee: updated.deliveryFee,
+      bank_name: updated.bank.bankName,
+      account_name: updated.bank.accountName,
+      account_number: updated.bank.accountNumber,
+      announcement_enabled: updated.announcement.enabled,
+      announcement_text: updated.announcement.message,
+    })
+    .eq("id", true);
   if (error) throw error;
   cacheSiteSettings(updated);
-  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(SITE_SETTINGS_EVENT, { detail: updated }));
+  if (typeof window !== "undefined")
+    window.dispatchEvent(
+      new CustomEvent(SITE_SETTINGS_EVENT, { detail: updated }),
+    );
   return updated;
 }

@@ -1,5 +1,5 @@
-'use client';
-import { useState } from 'react';
+"use client";
+import { useState } from "react";
 import {
   LayoutDashboard,
   Package,
@@ -9,8 +9,8 @@ import {
   Sliders,
   LogOut,
   ChevronRight,
-} from 'lucide-react';
-import { signOut } from '@/lib/auth';
+} from "lucide-react";
+import { signOut } from "@/lib/auth";
 
 interface AdminBottomNavProps {
   pathname: string;
@@ -19,17 +19,38 @@ interface AdminBottomNavProps {
 export default function AdminBottomNav({ pathname }: AdminBottomNavProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const active = 'bg-primary text-on-primary font-semibold shadow-xs';
-  const inactive = 'text-on-surface-variant hover:bg-surface-container-high';
+  const active = "bg-primary text-on-primary font-semibold shadow-xs";
+  const inactive = "text-on-surface-variant hover:bg-surface-container-high";
 
   const primaryItems = [
-    { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, active: pathname === '/admin' },
-    { href: '/admin/orders', label: 'Orders', icon: ShoppingCart, active: pathname.startsWith('/admin/orders') },
-    { href: '/admin/products', label: 'Products', icon: Package, active: pathname.startsWith('/admin/products') },
+    {
+      href: "/admin",
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      active: pathname === "/admin",
+    },
+    {
+      href: "/admin/orders",
+      label: "Orders",
+      icon: ShoppingCart,
+      active: pathname.startsWith("/admin/orders"),
+    },
+    {
+      href: "/admin/products",
+      label: "Products",
+      icon: Package,
+      active: pathname.startsWith("/admin/products"),
+    },
   ];
 
   const secondaryItems = [
-    { href: '/admin/content', label: 'Store Settings', description: 'Announcements and bank transfer', icon: Sliders, active: pathname.startsWith('/admin/content') },
+    {
+      href: "/admin/content",
+      label: "Store Settings",
+      description: "Announcements and bank transfer",
+      icon: Sliders,
+      active: pathname.startsWith("/admin/content"),
+    },
   ];
 
   const isMoreActive = secondaryItems.some((item) => item.active);
@@ -38,12 +59,14 @@ export default function AdminBottomNav({ pathname }: AdminBottomNavProps) {
     try {
       const { error } = await signOut();
       if (error) {
-        console.error('Sign out failed:', error.message);
+        console.error("Sign out failed:", error.message);
         return;
       }
-      window.location.replace(new URL('/admin', window.location.origin).toString());
+      window.location.replace(
+        new URL("/admin", window.location.origin).toString(),
+      );
     } catch (err: any) {
-      console.error('Sign out failed:', err?.message || 'Unknown error');
+      console.error("Sign out failed:", err?.message || "Unknown error");
     }
   };
 
@@ -83,20 +106,26 @@ export default function AdminBottomNav({ pathname }: AdminBottomNavProps) {
                   onClick={() => setDrawerOpen(false)}
                   className={`flex items-center justify-between p-3.5 rounded-xl transition-all ${
                     item.active
-                      ? 'bg-primary text-on-primary font-bold'
-                      : 'bg-surface-container-low hover:bg-surface-container text-on-surface'
+                      ? "bg-primary text-on-primary font-bold"
+                      : "bg-surface-container-low hover:bg-surface-container text-on-surface"
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <item.icon className={`w-5 h-5 ${item.active ? 'text-secondary-container' : 'text-secondary'}`} />
+                    <item.icon
+                      className={`w-5 h-5 ${item.active ? "text-secondary-container" : "text-secondary"}`}
+                    />
                     <div>
                       <div className="text-sm font-medium">{item.label}</div>
-                      <div className={`text-[11px] ${item.active ? 'text-on-primary/80' : 'text-on-surface-variant'}`}>
+                      <div
+                        className={`text-[11px] ${item.active ? "text-on-primary/80" : "text-on-surface-variant"}`}
+                      >
                         {item.description}
                       </div>
                     </div>
                   </div>
-                  <ChevronRight className={`w-4 h-4 ${item.active ? 'text-on-primary/60' : 'text-on-surface-variant/50'}`} />
+                  <ChevronRight
+                    className={`w-4 h-4 ${item.active ? "text-on-primary/60" : "text-on-surface-variant/50"}`}
+                  />
                 </a>
               ))}
             </div>
@@ -125,13 +154,18 @@ export default function AdminBottomNav({ pathname }: AdminBottomNavProps) {
             <a
               key={item.href}
               href={item.href}
-              aria-current={item.active ? 'page' : undefined}
+              aria-current={item.active ? "page" : undefined}
               className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all touch-target ${
                 item.active ? active : inactive
               }`}
             >
-              <item.icon className="w-5 h-5 mb-0.5 shrink-0" aria-hidden="true" />
-              <span className="font-label-sm text-[11px] leading-tight truncate">{item.label}</span>
+              <item.icon
+                className="w-5 h-5 mb-0.5 shrink-0"
+                aria-hidden="true"
+              />
+              <span className="font-label-sm text-[11px] leading-tight truncate">
+                {item.label}
+              </span>
             </a>
           ))}
 
@@ -147,11 +181,12 @@ export default function AdminBottomNav({ pathname }: AdminBottomNavProps) {
               <span className="absolute top-1.5 right-4 w-2 h-2 rounded-full bg-secondary ring-2 ring-surface" />
             )}
             <Menu className="w-5 h-5 mb-0.5 shrink-0" aria-hidden="true" />
-            <span className="font-label-sm text-[11px] leading-tight">More</span>
+            <span className="font-label-sm text-[11px] leading-tight">
+              More
+            </span>
           </button>
         </div>
       </nav>
     </>
   );
 }
-

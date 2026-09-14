@@ -10,6 +10,7 @@ interface Props {
   description?: string;
   pathname: string;
   image?: string;
+  siteName?: string;
   type?: 'website' | 'article';
 }
 
@@ -17,7 +18,8 @@ const {
   title = 'Your Store | Storefront',
   description = 'Browse currently available products and order directly from this storefront.',
   pathname,
-  image = 'https://lh3.googleusercontent.com/aida-public/AB6AXuD1Yy6GMbIqi-iQxCvqjcLUfqwsZwkrt1RwcRWsq9LWTMGM2sWHofVCipqrnFTdmiNqF0BxZgRzurPlmSZ0H1_qHIX2EgXTqNjfQcjcuK2s4Xx3yAuJ-_QBo1i06XVliNJMJBxYP_gbqKVPVCFSA6bkTv1oLOQxIQM0Zh-klcrUdkcId8u87rBkqu2lUURTMk0qQO_X5KlbGWgQSN8rdjfBuXHAz2pzalmlqS1j13ztnc0aRaHdnK8OxA',
+  image,
+  siteName = 'Storefront',
   type = 'website'
 } = Astro.props;
 
@@ -44,14 +46,14 @@ const canonicalUrl = new URL(pathname, siteUrl).toString();
     <meta property="og:description" content={description} />
     <meta property="og:type" content={type} />
     <meta property="og:url" content={canonicalUrl} />
-    <meta property="og:image" content={image} />
-    <meta property="og:site_name" content="Your Store" />
+    {image && <meta property="og:image" content={image} />}
+    <meta property="og:site_name" content={siteName} />
 
     <!-- Twitter / Instagram Large Card Previews -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content={image} />
+    {image && <meta name="twitter:image" content={image} />}
   </head>
   <body class="bg-background text-on-background antialiased selection:bg-secondary-container selection:text-on-secondary-container min-h-screen flex flex-col pb-[calc(80px+env(safe-area-inset-bottom,0px))] md:pb-0">
     <a href="#content" class="visually-hidden skip-link">Skip to content</a>

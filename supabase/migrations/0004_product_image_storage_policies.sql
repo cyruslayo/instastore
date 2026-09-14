@@ -13,8 +13,16 @@ create policy product_images_admin_insert on storage.objects
 -- storage metadata checks. Public storefront reads use the bucket's public URL.
 create policy product_images_admin_select on storage.objects
   for select to authenticated
-  using (bucket_id = 'product-images' and public.is_admin());
+  using (
+    bucket_id = 'product-images'
+    and public.is_admin()
+    and name ~ '^products/[A-Za-z0-9-]{20,64}\.(jpg|jpeg|png|webp)$'
+  );
 
 create policy product_images_admin_delete on storage.objects
   for delete to authenticated
-  using (bucket_id = 'product-images' and public.is_admin());
+  using (
+    bucket_id = 'product-images'
+    and public.is_admin()
+    and name ~ '^products/[A-Za-z0-9-]{20,64}\.(jpg|jpeg|png|webp)$'
+  );

@@ -16,8 +16,8 @@ This is the fresh-install path for a **new, empty Supabase project**. Never poin
 4. In Storage, manually create a bucket named `receipts`. Set it **private**, maximum file size to **5,242,880 bytes (5 MiB)**, and allowed MIME types to `image/jpeg`, `image/png`, and `application/pdf`. Do not create the bucket with SQL.
 5. In Storage, manually create a second bucket named `product-images`. Set it **public**, maximum file size to **5,242,880 bytes (5 MiB)**, and allowed MIME types to `image/jpeg`, `image/png`, and `image/webp`. Product images are public storefront assets; only admins can upload or delete them through Storage policies. Receipts are separate private data and must never be made public.
 6. Apply `supabase/migrations/0001_initial_commerce_schema.sql`, then `0002_commerce_security_and_rpcs.sql`, `0003_receipt_storage_policies.sql`, and `0004_product_image_storage_policies.sql` in filename order (Supabase CLI may be used locally, but do not link or push to a remote project).
-6. Create the first user in Supabase Auth (email/password or the configured Auth provider).
-7. Copy the Auth user's UUID and insert the matching admin profile in the SQL editor:
+7. Create the first user in Supabase Auth (email/password or the configured Auth provider).
+8. Copy the Auth user's UUID and insert the matching admin profile in the SQL editor:
 
    ```sql
    insert into public.profiles (id, email, role)

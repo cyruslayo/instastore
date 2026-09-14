@@ -35,7 +35,10 @@ export default function AdminProducts() {
         try {
           await deleteManagedProductImage(imageUrl);
         } catch (cleanupError) {
-          console.warn("Product deleted, but its managed image could not be cleaned up.", cleanupError);
+          console.warn(
+            "Product deleted, but its managed image could not be cleaned up.",
+            cleanupError,
+          );
           setError("Product deleted, but its image cleanup failed.");
         }
       }

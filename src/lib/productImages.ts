@@ -10,13 +10,21 @@ const MIME_EXTENSIONS = {
 type ProductImageMime = keyof typeof MIME_EXTENSIONS;
 
 function createSecureId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
     return crypto.randomUUID();
   }
-  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.getRandomValues === "function"
+  ) {
     const bytes = new Uint8Array(16);
     crypto.getRandomValues(bytes);
-    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
+      "",
+    );
   }
   throw new Error("This browser cannot securely name product images.");
 }
@@ -34,15 +42,19 @@ function validateFile(file: File): ProductImageMime {
 export async function uploadProductImage(file: File): Promise<string> {
   const mime = validateFile(file);
   const path = `products/${createSecureId()}.${MIME_EXTENSIONS[mime]}`;
-  const { error } = await getSupabase().storage.from(BUCKET).upload(path, file, {
-    contentType: mime,
-    upsert: false,
-  });
+  const { error } = await getSupabase()
+    .storage.from(BUCKET)
+    .upload(path, file, {
+      contentType: mime,
+      upsert: false,
+    });
   if (error) throw new Error(`Product image upload failed: ${error.message}`);
   return getSupabase().storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
-export async function deleteManagedProductImage(imageUrl: string): Promise<boolean> {
+export async function deleteManagedProductImage(
+  imageUrl: string,
+): Promise<boolean> {
   if (!imageUrl.trim()) return false;
   let parsed: URL;
   try {
@@ -59,7 +71,11 @@ export async function deleteManagedProductImage(imageUrl: string): Promise<boole
     return false;
   }
   const prefix = "/storage/v1/object/public/product-images/";
-  if (parsed.origin !== configured.origin || !parsed.pathname.startsWith(prefix)) return false;
+  if (
+    parsed.origin !== configured.origin ||
+    !parsed.pathname.startsWith(prefix)
+  )
+    return false;
   const encodedPath = parsed.pathname.slice(prefix.length);
   let objectPath: string;
   try {
@@ -67,9 +83,15 @@ export async function deleteManagedProductImage(imageUrl: string): Promise<boole
   } catch {
     return false;
   }
-  if (!/^products\/[A-Za-z0-9-]{20,64}\.(jpg|jpeg|png|webp)$/.test(objectPath)) return false;
-  if (objectPath.split("/").some((segment) => segment === ".." || segment === ".")) return false;
-  const { error } = await getSupabase().storage.from(BUCKET).remove([objectPath]);
+  if (!/^products\/[A-Za-z0-9-]{20,64}\.(jpg|jpeg|png|webp)$/.test(objectPath))
+    return false;
+  if (
+    objectPath.split("/").some((segment) => segment === ".." || segment === ".")
+  )
+    return false;
+  const { error } = await getSupabase()
+    .storage.from(BUCKET)
+    .remove([objectPath]);
   if (error) throw new Error(`Product image cleanup failed: ${error.message}`);
   return true;
 }

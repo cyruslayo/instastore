@@ -23,7 +23,7 @@ export default function AdminBottomNav({ pathname }: AdminBottomNavProps) {
   const inactive = 'text-on-surface-variant hover:bg-surface-container-high';
 
   const primaryItems = [
-    { href: '/admin', label: 'Overview', icon: LayoutDashboard, active: pathname === '/admin' },
+    { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, active: pathname === '/admin' },
     { href: '/admin/orders', label: 'Orders', icon: ShoppingCart, active: pathname.startsWith('/admin/orders') },
     { href: '/admin/products', label: 'Products', icon: Package, active: pathname.startsWith('/admin/products') },
   ];

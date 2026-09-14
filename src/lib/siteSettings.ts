@@ -1,193 +1,133 @@
-/**
- * Global Site Settings Management
- * Supports Bank/Payment instructions, storewide announcements,
- * and storefront copy.
- */
+/** Canonical settings shared by the public storefront and admin. */
 import { getSupabase } from "./supabase";
 
 export interface BankSettings {
   bankName: string;
   accountName: string;
   accountNumber: string;
-  dispatchNote: string;
 }
 
 export interface AnnouncementSettings {
   enabled: boolean;
   message: string;
-  linkText?: string;
-  linkUrl?: string;
 }
 
 export interface SiteSettings {
+  storeName: string;
+  tagline: string;
+  logoUrl: string;
+  instagramHandle: string;
+  whatsappNumber: string;
+  currency: "NGN";
   deliveryFee: number;
   bank: BankSettings;
   announcement: AnnouncementSettings;
 }
 
+export type StorefrontSettings = SiteSettings;
+
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
+  storeName: "Your Store",
+  tagline: "",
+  logoUrl: "",
+  instagramHandle: "",
+  whatsappNumber: "",
+  currency: "NGN",
   deliveryFee: 0,
-  bank: {
-    bankName: "",
-    accountName: "",
-    accountNumber: "",
-    dispatchNote: "Delivery details will be confirmed with your order.",
-  },
-  announcement: {
-    enabled: false,
-    message: "",
-    linkText: "Shop Available Products",
-    linkUrl: "/shop",
-  },
+  bank: { bankName: "", accountName: "", accountNumber: "" },
+  announcement: { enabled: false, message: "" },
 };
 
-const LOCAL_SITE_SETTINGS_KEY = "instastore_site_settings";
-export const SITE_SETTINGS_EVENT = "instastore-site-settings-updated";
+const LOCAL_SITE_SETTINGS_KEY = "InstaStore_site_settings";
+export const SITE_SETTINGS_EVENT = "InstaStore-site-settings-updated";
 
 function isSupabaseConfigured(): boolean {
   try {
-    // Astro injects ImportMeta.env; the fallback keeps this helper safe in non-Astro tooling.
-    // @ts-ignore -- ImportMeta.env is provided by Astro/Vite.
     const url = import.meta.env.PUBLIC_SUPABASE_URL;
-    // @ts-ignore -- ImportMeta.env is provided by Astro/Vite.
     const anonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
-    if (!url || !anonKey) return false;
-    if (
-      url.includes("your-project") ||
-      url.includes("placeholder") ||
-      anonKey === "your-anon-key"
-    ) {
-      return false;
-    }
-    return true;
+    return Boolean(url && anonKey && !url.includes("your-project") && !url.includes("placeholder") && anonKey !== "your-anon-key");
   } catch {
     return false;
   }
 }
 
-function mergeSiteSettings(
-  value: Partial<SiteSettings> | null | undefined,
-): SiteSettings {
+function normalise(value: Partial<SiteSettings> | null | undefined): SiteSettings {
+  const fee = Number(value?.deliveryFee ?? DEFAULT_SITE_SETTINGS.deliveryFee);
   return {
     ...DEFAULT_SITE_SETTINGS,
     ...(value || {}),
+    currency: "NGN",
+    deliveryFee: Number.isFinite(fee) && fee >= 0 ? fee : 0,
     bank: { ...DEFAULT_SITE_SETTINGS.bank, ...(value?.bank || {}) },
-    announcement: {
-      ...DEFAULT_SITE_SETTINGS.announcement,
-      ...(value?.announcement || {}),
-    },
+    announcement: { ...DEFAULT_SITE_SETTINGS.announcement, ...(value?.announcement || {}) },
   };
+}
+
+function fromRow(row: Record<string, unknown> | null | undefined): SiteSettings {
+  return normalise(row ? {
+    storeName: String(row.store_name ?? ""),
+    tagline: String(row.tagline ?? ""),
+    logoUrl: String(row.logo_url ?? ""),
+    instagramHandle: String(row.instagram_handle ?? ""),
+    whatsappNumber: String(row.whatsapp_number ?? ""),
+    currency: "NGN",
+    deliveryFee: Number(row.delivery_fee ?? 0),
+    bank: {
+      bankName: String(row.bank_name ?? ""),
+      accountName: String(row.account_name ?? ""),
+      accountNumber: String(row.account_number ?? ""),
+    },
+    announcement: {
+      enabled: Boolean(row.announcement_enabled),
+      message: String(row.announcement_text ?? ""),
+    },
+  } : null);
 }
 
 function cacheSiteSettings(settings: SiteSettings): void {
   if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(LOCAL_SITE_SETTINGS_KEY, JSON.stringify(settings));
-  } catch {
-    // A cache failure must never change the persistence result.
-  }
+  try { localStorage.setItem(LOCAL_SITE_SETTINGS_KEY, JSON.stringify(settings)); } catch { /* Cache is optional. */ }
 }
 
 export function getSiteSettings(): SiteSettings {
   if (typeof window !== "undefined") {
     try {
       const stored = localStorage.getItem(LOCAL_SITE_SETTINGS_KEY);
-      if (stored) {
-        return mergeSiteSettings(JSON.parse(stored));
-      }
-    } catch {
-      // Ignore malformed cached settings and use defaults.
-    }
+      if (stored) return normalise(JSON.parse(stored));
+    } catch { /* Use safe defaults. */ }
   }
   return DEFAULT_SITE_SETTINGS;
 }
 
 export async function fetchLiveSiteSettings(): Promise<SiteSettings> {
-  if (!isSupabaseConfigured()) {
-    throw new Error("Supabase is not configured for live site settings.");
-  }
-
-  const supabase = getSupabase();
-  const { data, error } = await supabase.rpc("get_storefront_settings");
+  if (!isSupabaseConfigured()) throw new Error("Supabase is not configured for live site settings.");
+  const { data, error } = await getSupabase().rpc("get_storefront_settings");
   if (error) throw error;
-  const row = Array.isArray(data) ? data[0] : data;
-  const merged = mergeSiteSettings(
-    row
-      ? {
-          deliveryFee: Number(row.delivery_fee ?? 0),
-          bank: {
-            bankName: row.bank_name || "",
-            accountName: row.account_name || "",
-            accountNumber: row.account_number || "",
-            dispatchNote: DEFAULT_SITE_SETTINGS.bank.dispatchNote,
-          },
-          announcement: {
-            enabled: row.announcement_enabled ?? false,
-            message: row.announcement_text || "",
-          },
-        }
-      : null,
-  );
-  cacheSiteSettings(merged);
-  return merged;
+  const settings = fromRow((Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null);
+  cacheSiteSettings(settings);
+  return settings;
 }
 
-export async function saveSiteSettings(
-  settings: Partial<SiteSettings>,
-): Promise<SiteSettings> {
-  if (!isSupabaseConfigured()) {
-    throw new Error("Supabase is not configured for live site settings.");
-  }
-
-  const supabase = getSupabase();
-  const { data, error: readError } = await supabase
-    .from("store_settings")
-    .select("*")
-    .eq("id", true)
-    .single();
-  if (readError) throw readError;
-
-  const current = mergeSiteSettings({
-    deliveryFee: Number(data.delivery_fee ?? 0),
-    bank: {
-      bankName: data.bank_name || "",
-      accountName: data.account_name || "",
-      accountNumber: data.account_number || "",
-      dispatchNote: DEFAULT_SITE_SETTINGS.bank.dispatchNote,
-    },
-    announcement: {
-      enabled: data.announcement_enabled ?? false,
-      message: data.announcement_text || "",
-    },
-  });
-  const updated = mergeSiteSettings({
-    ...current,
-    ...settings,
-    bank: settings.bank ? { ...current.bank, ...settings.bank } : current.bank,
-    announcement: settings.announcement
-      ? { ...current.announcement, ...settings.announcement }
-      : current.announcement,
-  });
-
-  const { error: writeError } = await supabase
-    .from("store_settings")
-    .update({
-      bank_name: updated.bank.bankName,
-      account_name: updated.bank.accountName,
-      account_number: updated.bank.accountNumber,
-      announcement_enabled: updated.announcement.enabled,
-      announcement_text: updated.announcement.message,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", true);
-
-  if (writeError) throw writeError;
-
+export async function saveSiteSettings(settings: SiteSettings): Promise<SiteSettings> {
+  if (!isSupabaseConfigured()) throw new Error("Supabase is not configured for live site settings.");
+  const updated = normalise(settings);
+  if (!Number.isFinite(updated.deliveryFee) || updated.deliveryFee < 0) throw new Error("Delivery fee must be a non-negative number.");
+  const { error } = await getSupabase().from("store_settings").update({
+    store_name: updated.storeName,
+    tagline: updated.tagline,
+    logo_url: updated.logoUrl,
+    instagram_handle: updated.instagramHandle,
+    whatsapp_number: updated.whatsappNumber,
+    currency: "NGN",
+    delivery_fee: updated.deliveryFee,
+    bank_name: updated.bank.bankName,
+    account_name: updated.bank.accountName,
+    account_number: updated.bank.accountNumber,
+    announcement_enabled: updated.announcement.enabled,
+    announcement_text: updated.announcement.message,
+  }).eq("id", true);
+  if (error) throw error;
   cacheSiteSettings(updated);
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(
-      new CustomEvent(SITE_SETTINGS_EVENT, { detail: updated }),
-    );
-  }
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(SITE_SETTINGS_EVENT, { detail: updated }));
   return updated;
 }

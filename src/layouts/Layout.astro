@@ -1,6 +1,7 @@
 ---
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
+import StorefrontFooter from '@/components/storefront/StorefrontFooter';
 import MotionProvider from '@/components/MotionProvider';
 import '@/styles/global.css';
 
@@ -13,7 +14,7 @@ interface Props {
 }
 
 const {
-  title = 'InstaStore | Storefront',
+  title = 'Your Store | Storefront',
   description = 'Browse currently available products and order directly from this storefront.',
   pathname,
   image = 'https://lh3.googleusercontent.com/aida-public/AB6AXuD1Yy6GMbIqi-iQxCvqjcLUfqwsZwkrt1RwcRWsq9LWTMGM2sWHofVCipqrnFTdmiNqF0BxZgRzurPlmSZ0H1_qHIX2EgXTqNjfQcjcuK2s4Xx3yAuJ-_QBo1i06XVliNJMJBxYP_gbqKVPVCFSA6bkTv1oLOQxIQM0Zh-klcrUdkcId8u87rBkqu2lUURTMk0qQO_X5KlbGWgQSN8rdjfBuXHAz2pzalmlqS1j13ztnc0aRaHdnK8OxA',
@@ -44,7 +45,7 @@ const canonicalUrl = new URL(pathname, siteUrl).toString();
     <meta property="og:type" content={type} />
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:image" content={image} />
-    <meta property="og:site_name" content="InstaStore" />
+    <meta property="og:site_name" content="Your Store" />
 
     <!-- Twitter / Instagram Large Card Previews -->
     <meta name="twitter:card" content="summary_large_image" />
@@ -60,6 +61,7 @@ const canonicalUrl = new URL(pathname, siteUrl).toString();
         <slot />
       </div>
     </MotionProvider>
+    <StorefrontFooter client:load />
     <BottomNav pathname={pathname} client:load />
 
     <!-- Instagram In-App Browser & Anchor Alignment script -->

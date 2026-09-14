@@ -9,4 +9,4 @@ let product: Product | null = null;
 try { product = await getProductBySlug(String(slug)); } catch (error) { console.warn(`Unable to load product for slug "${slug}":`, error); }
 if (!product) return Astro.redirect('/shop');
 ---
-<Layout pathname={`/product/${product.slug}`} title={`${product.name} | InstaStore`} description={product.description} image={product.image}><ProductDetailIsland client:load product={product} /></Layout>
+<Layout pathname={`/product/${product.slug}`} title={`${product.name} | Your Store`} description={product.description} image={product.image}><ProductDetailIsland client:load product={product} /></Layout>

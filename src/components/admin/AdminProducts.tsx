@@ -2,12 +2,14 @@
 import { useState, useEffect, useCallback } from "react";
 import ProductFormModal from "@/components/admin/ProductFormModal";
 import { formatNaira } from "@/lib/utils";
+import { deleteManagedProductImage } from "@/lib/productImages";
+import type { Product } from "@/lib/types";
 
 export default function AdminProducts() {
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [productToDelete, setProductToDelete] = useState<any | null>(null);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [productToEdit, setProductToEdit] = useState<any | null>(null);
@@ -27,7 +29,16 @@ export default function AdminProducts() {
         .eq("id", productToDelete.id);
       if (error) throw error;
       setProducts(products.filter((p) => p.id !== productToDelete.id));
+      const imageUrl = productToDelete.image;
       setProductToDelete(null);
+      if (imageUrl) {
+        try {
+          await deleteManagedProductImage(imageUrl);
+        } catch (cleanupError) {
+          console.warn("Product deleted, but its managed image could not be cleaned up.", cleanupError);
+          setError("Product deleted, but its image cleanup failed.");
+        }
+      }
     } catch (error) {
       console.error("Error deleting product: ", error);
       setError("The product could not be deleted from Supabase.");
@@ -70,7 +81,7 @@ export default function AdminProducts() {
     setIsFormModalOpen(true);
   };
 
-  const handleEditClick = (product: any) => {
+  const handleEditClick = (product: Product) => {
     setProductToEdit(product);
     setIsFormModalOpen(true);
   };
@@ -409,7 +420,7 @@ export default function AdminProducts() {
   );
 }
 
-function ProductMetadata({ product }: { product: any }) {
+function ProductMetadata({ product }: { product: Product }) {
   return (
     <div className="mt-1 text-[11px] font-mono text-on-surface-variant">
       SKU: {product.sku || "—"}

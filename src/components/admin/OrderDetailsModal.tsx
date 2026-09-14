@@ -67,10 +67,8 @@ export default function OrderDetailsModal({ isOpen, onClose, order, onSaved }: O
     setError(null);
     setIsSaving(true);
     try {
-      const { getSupabase } = await import('@/lib/supabase');
-      const supabase = getSupabase();
-      const { error } = await supabase.from('orders').update({ status }).eq('id', order.id);
-      if (error) throw error;
+      const { setOrderStatus } = await import('@/lib/orders');
+      await setOrderStatus(order.id, status);
       onSaved();
       onClose();
     } catch (err: any) {

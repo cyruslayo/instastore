@@ -30,12 +30,11 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     bankName: "",
     accountName: "",
     accountNumber: "",
-    dispatchNote:
-      "Orders are dispatched via private courier directly within Abuja (FCT).",
+    dispatchNote: "Delivery details will be confirmed with your order.",
   },
   announcement: {
     enabled: false,
-    message: "Autumn Harvest BT-2481 is now available for approved members.",
+    message: "",
     linkText: "Shop Available Products",
     linkUrl: "/shop",
   },
@@ -112,18 +111,22 @@ export async function fetchLiveSiteSettings(): Promise<SiteSettings> {
   const { data, error } = await supabase.rpc("get_storefront_settings");
   if (error) throw error;
   const row = Array.isArray(data) ? data[0] : data;
-  const merged = mergeSiteSettings(row ? {
-    bank: {
-      bankName: row.bank_name || "",
-      accountName: row.account_name || "",
-      accountNumber: row.account_number || "",
-      dispatchNote: DEFAULT_SITE_SETTINGS.bank.dispatchNote,
-    },
-    announcement: {
-      enabled: row.announcement_enabled ?? false,
-      message: row.announcement_text || "",
-    },
-  } : null);
+  const merged = mergeSiteSettings(
+    row
+      ? {
+          bank: {
+            bankName: row.bank_name || "",
+            accountName: row.account_name || "",
+            accountNumber: row.account_number || "",
+            dispatchNote: DEFAULT_SITE_SETTINGS.bank.dispatchNote,
+          },
+          announcement: {
+            enabled: row.announcement_enabled ?? false,
+            message: row.announcement_text || "",
+          },
+        }
+      : null,
+  );
   cacheSiteSettings(merged);
   return merged;
 }

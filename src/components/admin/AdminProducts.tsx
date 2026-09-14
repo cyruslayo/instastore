@@ -1,7 +1,7 @@
-'use client';
-import { useState, useEffect, useCallback } from 'react';
-import ProductFormModal from '@/components/admin/ProductFormModal';
-import { formatNaira } from '@/lib/utils';
+"use client";
+import { useState, useEffect, useCallback } from "react";
+import ProductFormModal from "@/components/admin/ProductFormModal";
+import { formatNaira } from "@/lib/utils";
 
 export default function AdminProducts() {
   const [products, setProducts] = useState<any[]>([]);
@@ -17,41 +17,45 @@ export default function AdminProducts() {
     setIsDeleting(true);
     setError(null);
     try {
-      const { getSupabase } = await import('@/lib/supabase');
+      const { getSupabase } = await import("@/lib/supabase");
       const supabase = getSupabase();
-      if (!productToDelete.id) throw new Error('The selected product has no database ID.');
-      const { error } = await supabase.from('products').delete().eq('id', productToDelete.id);
+      if (!productToDelete.id)
+        throw new Error("The selected product has no database ID.");
+      const { error } = await supabase
+        .from("products")
+        .delete()
+        .eq("id", productToDelete.id);
       if (error) throw error;
       setProducts(products.filter((p) => p.id !== productToDelete.id));
       setProductToDelete(null);
     } catch (error) {
-      console.error('Error deleting product: ', error);
-      setError('The product could not be deleted from Supabase.');
+      console.error("Error deleting product: ", error);
+      setError("The product could not be deleted from Supabase.");
     } finally {
       setIsDeleting(false);
     }
   }
 
   const existingCategories = Array.from(
-    new Set(products.map((p) => p.category).filter(Boolean))
+    new Set(products.map((p) => p.category).filter(Boolean)),
   );
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const { getSupabase } = await import('@/lib/supabase');
+      const { getSupabase } = await import("@/lib/supabase");
       const supabase = getSupabase();
       const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from("products")
+        .select("*")
+        .order("created_at", { ascending: false });
       if (error) throw error;
       setProducts(data ?? []);
     } catch (error) {
-      console.error('Error fetching products: ', error);
+      console.error("Error fetching products: ", error);
       setProducts([]);
-      setError('Products could not be loaded.');
+      setError("Products could not be loaded.");
     } finally {
       setLoading(false);
     }
@@ -71,13 +75,15 @@ export default function AdminProducts() {
     setIsFormModalOpen(true);
   };
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
   const filteredProducts = products.filter((p) => {
-    const matchesSearch = p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch =
+      p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.category?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
+    const matchesCategory =
+      selectedCategory === "All" || p.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -86,7 +92,9 @@ export default function AdminProducts() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="font-headline-md text-xl sm:text-headline-md text-on-surface">Products</h2>
+          <h2 className="font-headline-md text-xl sm:text-headline-md text-on-surface">
+            Products
+          </h2>
           <p className="font-body-sm text-xs sm:text-sm text-on-surface-variant">
             Manage your product catalog and stock levels.
           </p>
@@ -120,11 +128,11 @@ export default function AdminProducts() {
         <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar shrink-0">
           <button
             type="button"
-            onClick={() => setSelectedCategory('All')}
+            onClick={() => setSelectedCategory("All")}
             className={`px-3 py-2 rounded-xl text-xs font-mono font-bold transition-colors whitespace-nowrap cursor-pointer ${
-              selectedCategory === 'All'
-                ? 'bg-primary text-on-primary'
-                : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'
+              selectedCategory === "All"
+                ? "bg-primary text-on-primary"
+                : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container"
             }`}
           >
             All ({products.length})
@@ -136,8 +144,8 @@ export default function AdminProducts() {
               onClick={() => setSelectedCategory(cat)}
               className={`px-3 py-2 rounded-xl text-xs font-mono font-bold transition-colors whitespace-nowrap cursor-pointer ${
                 selectedCategory === cat
-                  ? 'bg-primary text-on-primary'
-                  : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'
+                  ? "bg-primary text-on-primary"
+                  : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container"
               }`}
             >
               {cat}
@@ -181,16 +189,16 @@ export default function AdminProducts() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1">
                     <span className="font-mono text-[10px] px-2 py-0.5 rounded-md bg-surface-container text-secondary font-bold truncate">
-                      {product.category || 'General'}
+                      {product.category || "General"}
                     </span>
                     <span
                       className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                         product.is_active
-                          ? 'bg-secondary-container text-on-secondary-container'
-                          : 'bg-surface-variant text-on-surface-variant'
+                          ? "bg-secondary-container text-on-secondary-container"
+                          : "bg-surface-variant text-on-surface-variant"
                       }`}
                     >
-                      {product.is_active ? 'Active' : 'Draft'}
+                      {product.is_active ? "Active" : "Draft"}
                     </span>
                   </div>
 
@@ -205,8 +213,8 @@ export default function AdminProducts() {
                     <span
                       className={`font-mono text-[11px] ${
                         product.inventory < 10
-                          ? 'text-error font-bold'
-                          : 'text-on-surface-variant'
+                          ? "text-error font-bold"
+                          : "text-on-surface-variant"
                       }`}
                     >
                       {product.inventory} in stock
@@ -244,56 +252,100 @@ export default function AdminProducts() {
           <table className="w-full text-left border-collapse">
             <thead className="bg-surface-container-low">
               <tr className="border-b border-outline-variant">
-                <th className="p-4 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider">Product</th>
-                <th className="p-4 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider">Category</th>
-                <th className="p-4 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider">Price</th>
-                <th className="p-4 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider">Inventory</th>
-                <th className="p-4 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider">Status</th>
-                <th className="p-4 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider text-right">Actions</th>
+                <th className="p-4 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider">
+                  Product
+                </th>
+                <th className="p-4 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider">
+                  Category
+                </th>
+                <th className="p-4 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider">
+                  Price
+                </th>
+                <th className="p-4 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider">
+                  Inventory
+                </th>
+                <th className="p-4 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="p-4 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider text-right">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="font-body-md text-sm text-on-surface divide-y divide-outline-variant/50">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-on-surface-variant">Loading products...</td>
+                  <td
+                    colSpan={6}
+                    className="p-8 text-center text-on-surface-variant"
+                  >
+                    Loading products...
+                  </td>
                 </tr>
               ) : filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-on-surface-variant">No products found.</td>
+                  <td
+                    colSpan={6}
+                    className="p-8 text-center text-on-surface-variant"
+                  >
+                    No products found.
+                  </td>
                 </tr>
               ) : (
                 filteredProducts.map((product) => (
-                  <tr key={product.id} className="hover:bg-surface-container-low/50 transition-colors">
+                  <tr
+                    key={product.id}
+                    className="hover:bg-surface-container-low/50 transition-colors"
+                  >
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <div className="relative w-12 h-12 rounded-xl bg-surface-container overflow-hidden shrink-0">
                           {product.image ? (
-                            <img src={product.image} alt={product.name} referrerPolicy="no-referrer" className="absolute inset-0 h-full w-full object-cover" />
+                            <img
+                              src={product.image}
+                              alt={product.name}
+                              referrerPolicy="no-referrer"
+                              className="absolute inset-0 h-full w-full object-cover"
+                            />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-surface-container-highest text-on-surface-variant font-label-sm">No Img</div>
+                            <div className="w-full h-full flex items-center justify-center bg-surface-container-highest text-on-surface-variant font-label-sm">
+                              No Img
+                            </div>
                           )}
                         </div>
-                        <span className="font-medium text-primary line-clamp-1">{product.name}</span>
+                        <span className="font-medium text-primary line-clamp-1">
+                          {product.name}
+                        </span>
                       </div>
                     </td>
                     <td className="p-4 text-on-surface-variant font-mono text-xs">
                       <div>{product.category}</div>
                       <ProductMetadata product={product} />
                     </td>
-                    <td className="p-4 font-mono font-medium">{formatNaira(product.price)}</td>
+                    <td className="p-4 font-mono font-medium">
+                      {formatNaira(product.price)}
+                    </td>
                     <td className="p-4 font-mono text-xs">
-                      <span className={`px-2.5 py-1 rounded-full text-xs ${product.inventory < 10 ? 'bg-error/10 text-error font-bold' : 'bg-surface-container-high text-on-surface-variant'}`}>
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-xs ${product.inventory < 10 ? "bg-error/10 text-error font-bold" : "bg-surface-container-high text-on-surface-variant"}`}
+                      >
                         {product.inventory} in stock
                       </span>
                     </td>
                     <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${product.is_active ? 'bg-secondary-container text-on-secondary-container' : 'bg-surface-variant text-on-surface-variant'}`}>
-                        {product.is_active ? 'Active' : 'Draft'}
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-xs font-semibold ${product.is_active ? "bg-secondary-container text-on-secondary-container" : "bg-surface-variant text-on-surface-variant"}`}
+                      >
+                        {product.is_active ? "Active" : "Draft"}
                       </span>
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => handleEditClick(product)} aria-label={`Edit ${product.name}`} className="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-lg hover:bg-surface-container cursor-pointer">
+                        <button
+                          onClick={() => handleEditClick(product)}
+                          aria-label={`Edit ${product.name}`}
+                          className="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-lg hover:bg-surface-container cursor-pointer"
+                        >
                           <EditIcon />
                         </button>
                         <button
@@ -316,9 +368,13 @@ export default function AdminProducts() {
       {productToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-surface p-6 rounded-xl border border-outline-variant botanical-shadow max-w-md w-full animate-in fade-in zoom-in duration-200">
-            <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">Delete Product</h3>
+            <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">
+              Delete Product
+            </h3>
             <p className="font-body-md text-body-md text-on-surface-variant mb-6">
-              Are you sure you want to delete <strong>{productToDelete.name}</strong>? This action cannot be undone.
+              Are you sure you want to delete{" "}
+              <strong>{productToDelete.name}</strong>? This action cannot be
+              undone.
             </p>
             <div className="flex justify-end gap-3">
               <button
@@ -333,7 +389,7 @@ export default function AdminProducts() {
                 disabled={isDeleting}
                 className="px-4 py-2 rounded-lg font-label-sm text-label-sm bg-error text-on-error hover:bg-error/90 transition-colors disabled:opacity-50 flex items-center gap-2"
               >
-                {isDeleting ? 'Deleting...' : 'Delete'}
+                {isDeleting ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>
@@ -354,23 +410,26 @@ export default function AdminProducts() {
 }
 
 function ProductMetadata({ product }: { product: any }) {
-  const hasBottle = product.strength_mg != null || product.bottle_size_ml != null;
-  const bottle = hasBottle
-    ? `${product.strength_mg != null ? `${product.strength_mg} mg` : '—'}${product.strength_mg != null && product.bottle_size_ml != null ? ' / ' : ''}${product.bottle_size_ml != null ? `${product.bottle_size_ml} ml` : ''}`
-    : '—';
-
   return (
-    <div className="mt-1 space-y-0.5 text-[11px] font-mono text-on-surface-variant">
-      <div>{bottle}</div>
-      <div>{product.strain_name ? `Strain: ${product.strain_name}` : 'Strain: —'}</div>
-      <div>{product.batch_code ? `Batch: ${product.batch_code}` : 'Batch: —'}</div>
+    <div className="mt-1 text-[11px] font-mono text-on-surface-variant">
+      SKU: {product.sku || "—"}
     </div>
   );
 }
 
 function PlusIcon() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M5 12h14" />
       <path d="M12 5v14" />
     </svg>
@@ -379,7 +438,17 @@ function PlusIcon() {
 
 function EditIcon() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
     </svg>
   );
@@ -387,7 +456,17 @@ function EditIcon() {
 
 function TrashIcon() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M3 6h18" />
       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
       <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />

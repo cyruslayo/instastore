@@ -13,7 +13,7 @@ export default function ProductDetailIsland({ product }: { product: Product }) {
   const [addedNotice, setAddedNotice] = useState(false);
   const approved = useStore(isApproved);
   const pending = useStore(isPending);
-  const variant = product.category || 'Standard';
+  const variant = product.category || "Standard";
 
   const toggleSection = (section: string) => {
     setOpenSection(openSection === section ? null : section);
@@ -169,21 +169,20 @@ export default function ProductDetailIsland({ product }: { product: Product }) {
 
             <div className="border-b border-outline-variant/30">
               <button
-                onClick={() => toggleSection("usage")}
+                type="button"
+                onClick={() => toggleSection("availability")}
                 className="w-full py-4 flex justify-between items-center font-label-md text-label-md text-on-surface hover:text-primary transition-colors uppercase tracking-wider"
               >
-                Suggested Use
+                Availability
                 <PlusIcon
-                  className={`w-4 h-4 transition-transform duration-300 ${openSection === "usage" ? "rotate-45" : ""}`}
+                  className={`w-4 h-4 transition-transform duration-300 ${openSection === "availability" ? "rotate-45" : ""}`}
                 />
               </button>
               <div
-                className={`overflow-hidden transition-all duration-300 ease-in-out ${openSection === "usage" ? "max-h-40 pb-4 opacity-100" : "max-h-0 opacity-0"}`}
+                className={`overflow-hidden transition-all duration-300 ease-in-out ${openSection === "availability" ? "max-h-40 pb-4 opacity-100" : "max-h-0 opacity-0"}`}
               >
                 <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
-                  Use deliberately and allow adequate time before changing
-                  another variable. Do not drive or operate machinery after THC
-                  use.
+                  {product.inventory > 0 ? `${product.inventory} available` : "Currently unavailable"}
                 </p>
               </div>
             </div>

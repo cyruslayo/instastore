@@ -1,6 +1,6 @@
-'use client';
-import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+"use client";
+import { useState, useEffect } from "react";
+import { X } from "lucide-react";
 
 interface ProductFormModalProps {
   isOpen: boolean;
@@ -19,94 +19,95 @@ export default function ProductFormModal({
 }: ProductFormModalProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    slug: '',
-    description: '',
+    name: "",
+    slug: "",
+    description: "",
     price: 0,
     inventory: 0,
-    category: 'Oils',
-    image: '',
+    category: "Oils",
+    image: "",
     is_active: true,
-    strength_mg: '',
-    bottle_size_ml: '',
-    strain_name: '',
-    batch_code: '',
   });
   const [error, setError] = useState<string | null>(null);
   const [isAddingNewCategory, setIsAddingNewCategory] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryName, setNewCategoryName] = useState("");
 
   // Base list of categories merged with any from active products, minus duplicates
   const categoryOptions = Array.from(
-    new Set([
-      'Oils',
-      ...existingCategories.filter(Boolean),
-      formData.category,
-    ].filter(Boolean))
+    new Set(
+      ["Oils", ...existingCategories.filter(Boolean), formData.category].filter(
+        Boolean,
+      ),
+    ),
   );
 
   useEffect(() => {
     if (product) {
       setFormData({
-        name: product.name || '',
-        slug: product.slug || '',
-        description: product.description || '',
+        name: product.name || "",
+        slug: product.slug || "",
+        description: product.description || "",
         price: product.price || 0,
         inventory: product.inventory || 0,
-        category: product.category || 'Oils',
-        image: product.image || '',
+        category: product.category || "Oils",
+        image: product.image || "",
         is_active: product.is_active ?? true,
-        strength_mg: product.strength_mg == null ? '' : String(product.strength_mg),
-        bottle_size_ml: product.bottle_size_ml == null ? '' : String(product.bottle_size_ml),
-        strain_name: product.strain_name || '',
-        batch_code: product.batch_code || '',
       });
       setIsAddingNewCategory(false);
-      setNewCategoryName('');
+      setNewCategoryName("");
     } else {
       setFormData({
-        name: '',
-        slug: '',
-        description: '',
+        name: "",
+        slug: "",
+        description: "",
         price: 0,
         inventory: 0,
-        category: 'Oils',
-        image: '',
+        category: "Oils",
+        image: "",
         is_active: true,
-        strength_mg: '',
-        bottle_size_ml: '',
-        strain_name: '',
-        batch_code: '',
       });
       setIsAddingNewCategory(false);
-      setNewCategoryName('');
+      setNewCategoryName("");
     }
   }, [product, isOpen]);
 
   const generateSlug = (name: string) => {
-    return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)+/g, "");
   };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const name = e.target.value;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       name,
-      slug: prev.slug === generateSlug(prev.name) || prev.slug === '' ? generateSlug(name) : prev.slug
+      slug:
+        prev.slug === generateSlug(prev.name) || prev.slug === ""
+          ? generateSlug(name)
+          : prev.slug,
     }));
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
     const { name, value, type } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'number' && name !== 'strength_mg' && name !== 'bottle_size_ml' ? Number(value) : value
+      [name]:
+        type === "number"
+          ? Number(value)
+          : value,
     }));
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
-    setFormData(prev => ({ ...prev, [name]: checked }));
+    setFormData((prev) => ({ ...prev, [name]: checked }));
   };
 
   const save = async () => {
@@ -127,22 +128,23 @@ export default function ProductFormModal({
         category: formData.category,
         image: formData.image,
         is_active: formData.is_active,
-        strength_mg: formData.strength_mg.trim() === '' ? null : Number(formData.strength_mg),
-        bottle_size_ml: formData.bottle_size_ml.trim() === '' ? null : Number(formData.bottle_size_ml),
-        strain_name: formData.strain_name.trim() || null,
-        batch_code: formData.batch_code.trim() || null,
+        featured: product?.featured ?? false,
+        sku: product?.sku || null,
       };
 
-      const { getSupabase } = await import('@/lib/supabase');
+      const { getSupabase } = await import("@/lib/supabase");
       const supabase = getSupabase();
 
       if (product?.id) {
         // Update
-        const { error } = await supabase.from('products').update(payload).eq('id', product.id);
+        const { error } = await supabase
+          .from("products")
+          .update(payload)
+          .eq("id", product.id);
         if (error) throw error;
       } else {
         // Create
-        const { error } = await supabase.from('products').insert(payload);
+        const { error } = await supabase.from("products").insert(payload);
         if (error) throw error;
       }
 
@@ -167,15 +169,25 @@ export default function ProductFormModal({
               Catalog Management
             </span>
             <h3 className="font-headline-sm text-base sm:text-headline-sm text-on-surface font-bold">
-              {product ? 'Edit Product' : 'Add New Product'}
+              {product ? "Edit Product" : "Add New Product"}
             </h3>
           </div>
-          <button onClick={onClose} aria-label="Close" className="touch-target flex items-center justify-center p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors cursor-pointer">
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="touch-target flex items-center justify-center p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors cursor-pointer"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={(e) => { e.preventDefault(); save(); }} className="px-5 py-4 sm:p-6 overflow-y-auto overscroll-contain flex-1 space-y-5">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            save();
+          }}
+          className="px-5 py-4 sm:p-6 overflow-y-auto overscroll-contain flex-1 space-y-5"
+        >
           {error && (
             <div className="p-3.5 bg-error/10 text-error rounded-xl text-xs sm:text-sm font-medium">
               {error}
@@ -184,7 +196,9 @@ export default function ProductFormModal({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-2">
-              <label className="font-label-md text-label-md text-on-surface-variant">Name</label>
+              <label className="font-label-md text-label-md text-on-surface-variant">
+                Name
+              </label>
               <input
                 type="text"
                 name="name"
@@ -195,34 +209,11 @@ export default function ProductFormModal({
               />
             </div>
 
-            <div className="sm:col-span-2 border-t border-outline-variant/60 pt-5 space-y-4">
-              <div>
-                <h4 className="font-headline-sm text-on-surface">Additional Product Details</h4>
-                <p className="font-body-sm text-on-surface-variant">Optional metadata controlled by the administrator.</p>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {[
-                  ['strength_mg', 'Strength (mg)'],
-                  ['bottle_size_ml', 'Bottle Size (ml)'],
-                ].map(([name, label]) => (
-                  <div className="space-y-2" key={name}>
-                    <label htmlFor={name} className="font-label-md text-label-md text-on-surface-variant">{label}</label>
-                    <input id={name} type="number" step="any" min="0" name={name} value={formData[name as 'strength_mg' | 'bottle_size_ml']} onChange={handleChange} className="w-full p-3 bg-surface border border-outline rounded-lg text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary" />
-                  </div>
-                ))}
-                <div className="space-y-2">
-                  <label htmlFor="strain_name" className="font-label-md text-label-md text-on-surface-variant">Strain Name</label>
-                  <input id="strain_name" type="text" name="strain_name" value={formData.strain_name} onChange={handleChange} className="w-full p-3 bg-surface border border-outline rounded-lg text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary" />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="batch_code" className="font-label-md text-label-md text-on-surface-variant">Batch Code</label>
-                  <input id="batch_code" type="text" name="batch_code" value={formData.batch_code} onChange={handleChange} className="w-full p-3 bg-surface border border-outline rounded-lg text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary" />
-                </div>
-              </div>
-            </div>
 
             <div className="space-y-2">
-              <label className="font-label-md text-label-md text-on-surface-variant">Slug (URL)</label>
+              <label className="font-label-md text-label-md text-on-surface-variant">
+                Slug (URL)
+              </label>
               <input
                 type="text"
                 name="slug"
@@ -231,11 +222,15 @@ export default function ProductFormModal({
                 onChange={handleChange}
                 className="w-full p-3 bg-surface border border-outline rounded-lg text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               />
-              <p className="font-body-sm text-[11px] text-on-surface-variant">Changing a published slug can break existing links.</p>
+              <p className="font-body-sm text-[11px] text-on-surface-variant">
+                Changing a published slug can break existing links.
+              </p>
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <label className="font-label-md text-label-md text-on-surface-variant">Description</label>
+              <label className="font-label-md text-label-md text-on-surface-variant">
+                Description
+              </label>
               <textarea
                 name="description"
                 rows={8}
@@ -244,12 +239,15 @@ export default function ProductFormModal({
                 className="w-full p-3 bg-surface border border-outline rounded-lg text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary resize-y"
               />
               <p className="font-body-sm text-[11px] text-on-surface-variant">
-                Use blank lines for paragraphs. Start bullet items with &quot;- &quot;.
+                Use blank lines for paragraphs. Start bullet items with &quot;-
+                &quot;.
               </p>
             </div>
 
             <div className="space-y-2">
-              <label className="font-label-md text-label-md text-on-surface-variant">Price (₦)</label>
+              <label className="font-label-md text-label-md text-on-surface-variant">
+                Price (₦)
+              </label>
               <input
                 type="number"
                 name="price"
@@ -263,7 +261,9 @@ export default function ProductFormModal({
             </div>
 
             <div className="space-y-2">
-              <label className="font-label-md text-label-md text-on-surface-variant">Inventory Count</label>
+              <label className="font-label-md text-label-md text-on-surface-variant">
+                Inventory Count
+              </label>
               <input
                 type="number"
                 name="inventory"
@@ -277,18 +277,22 @@ export default function ProductFormModal({
 
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="font-label-md text-label-md text-on-surface-variant">Category</label>
+                <label className="font-label-md text-label-md text-on-surface-variant">
+                  Category
+                </label>
                 <button
                   type="button"
                   onClick={() => {
                     setIsAddingNewCategory(!isAddingNewCategory);
                     if (!isAddingNewCategory) {
-                      setNewCategoryName('');
+                      setNewCategoryName("");
                     }
                   }}
                   className="font-label-sm text-xs text-primary underline underline-offset-2 hover:opacity-80 transition-opacity"
                 >
-                  {isAddingNewCategory ? 'Choose from existing' : '+ Add new category'}
+                  {isAddingNewCategory
+                    ? "Choose from existing"
+                    : "+ Add new category"}
                 </button>
               </div>
 
@@ -302,12 +306,16 @@ export default function ProductFormModal({
                     onChange={(e) => {
                       const val = e.target.value;
                       setNewCategoryName(val);
-                      setFormData(prev => ({ ...prev, category: val.trim() }));
+                      setFormData((prev) => ({
+                        ...prev,
+                        category: val.trim(),
+                      }));
                     }}
                     className="w-full p-3 bg-surface border border-primary rounded-lg text-on-surface focus:outline-none focus:ring-1 focus:ring-primary font-medium"
                   />
                   <span className="font-body-sm text-[11px] text-on-surface-variant">
-                    Type a new category name. It will be saved with this product and become available across your store.
+                    Type a new category name. It will be saved with this product
+                    and become available across your store.
                   </span>
                 </div>
               ) : (
@@ -315,9 +323,9 @@ export default function ProductFormModal({
                   name="category"
                   value={formData.category}
                   onChange={(e) => {
-                    if (e.target.value === '__new__') {
+                    if (e.target.value === "__new__") {
                       setIsAddingNewCategory(true);
-                      setNewCategoryName('');
+                      setNewCategoryName("");
                     } else {
                       handleChange(e);
                     }
@@ -335,7 +343,9 @@ export default function ProductFormModal({
             </div>
 
             <div className="space-y-2">
-              <label className="font-label-md text-label-md text-on-surface-variant">Image URL</label>
+              <label className="font-label-md text-label-md text-on-surface-variant">
+                Image URL
+              </label>
               <input
                 type="url"
                 name="image"
@@ -355,7 +365,9 @@ export default function ProductFormModal({
                   onChange={handleCheckboxChange}
                   className="w-5 h-5 rounded border-outline text-primary focus:ring-primary"
                 />
-                <span className="font-body-md text-on-surface">Product is Active (Visible on store)</span>
+                <span className="font-body-md text-on-surface">
+                  Product is Active (Visible on store)
+                </span>
               </label>
             </div>
           </div>
@@ -375,7 +387,7 @@ export default function ProductFormModal({
             disabled={isSaving}
             className="px-6 py-2.5 rounded-lg font-label-lg text-label-lg bg-primary text-on-primary hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
           >
-            {isSaving ? 'Saving...' : 'Save Product'}
+            {isSaving ? "Saving..." : "Save Product"}
           </button>
         </div>
       </div>

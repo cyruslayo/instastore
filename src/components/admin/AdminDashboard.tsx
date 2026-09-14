@@ -8,8 +8,9 @@ interface DashboardOrder {
   id: string;
   total: number;
   status: string;
-  user_id: string;
-  shipping_address?: { instagramHandle?: string };
+  public_code: string;
+  customer_name: string;
+  customer_instagram?: string | null;
   created_at: string;
 }
 
@@ -39,23 +40,20 @@ export default function AdminDashboard() {
     setError(null);
     try {
       const supabase = getSupabase();
-      const [ordersResult, productsResult, applicationsResult] = await Promise.all([
-        supabase.from('orders').select('id,total,status,user_id,shipping_address,created_at').order('created_at', { ascending: false }),
+      const [ordersResult, productsResult] = await Promise.all([
+        supabase.from('orders').select('id,public_code,total,status,customer_name,customer_instagram,created_at').order('created_at', { ascending: false }),
         supabase.from('products').select('id').eq('is_active', true),
-        supabase.from('access_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
       ]);
 
       if (ordersResult.error) throw ordersResult.error;
       if (productsResult.error) throw productsResult.error;
-      if (applicationsResult.error) throw applicationsResult.error;
-
       const orders = (ordersResult.data || []) as DashboardOrder[];
       const liveOrders = orders.filter((order) => order.status.toLowerCase() !== 'cancelled');
       setMetrics({
         orderValue: liveOrders.reduce((sum, order) => sum + Number(order.total || 0), 0),
         totalOrders: orders.length,
         activeProducts: productsResult.data?.length || 0,
-        pendingApplications: applicationsResult.count || 0,
+        pendingApplications: 0,
         recentOrders: liveOrders.slice(0, 5),
       });
     } catch (loadError) {
@@ -123,7 +121,7 @@ export default function AdminDashboard() {
               <thead>
                 <tr className="border-b border-outline-variant/60">
                   <th className="pb-3 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider">Order ID</th>
-                  <th className="pb-3 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider">Member</th>
+                  <th className="pb-3 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider">Customer</th>
                   <th className="pb-3 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider">Date</th>
                   <th className="pb-3 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider">Amount</th>
                   <th className="pb-3 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider text-right">Status</th>
@@ -132,8 +130,8 @@ export default function AdminDashboard() {
               <tbody className="font-body-md text-sm text-on-surface divide-y divide-outline-variant/40">
                 {metrics.recentOrders.map((order) => (
                   <tr key={order.id}>
-                    <td className="py-3.5 font-mono font-semibold text-primary">#{order.id}</td>
-                    <td className="py-3.5 font-mono text-xs">{order.shipping_address?.instagramHandle || order.user_id}</td>
+                    <td className="py-3.5 font-mono font-semibold text-primary">{order.public_code}</td>
+                    <td className="py-3.5 font-mono text-xs">{order.customer_name || order.customer_instagram || 'Guest customer'}</td>
                     <td className="py-3.5 text-on-surface-variant text-xs font-mono">{new Date(order.created_at).toLocaleDateString()}</td>
                     <td className="py-3.5 font-mono font-medium">{formatNaira(order.total)}</td>
                     <td className="py-3.5 text-right"><span className="px-2.5 py-1 bg-surface-container-high text-on-surface-variant rounded-full text-xs font-medium">{order.status}</span></td>

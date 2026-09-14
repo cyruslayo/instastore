@@ -86,5 +86,26 @@ create trigger products_touch_updated_at before update on public.products for ea
 create trigger store_settings_touch_updated_at before update on public.store_settings for each row execute function public.touch_updated_at();
 create trigger orders_touch_updated_at before update on public.orders for each row execute function public.touch_updated_at();
 
+create or replace function public.prevent_ordered_product_delete()
+returns trigger language plpgsql set search_path = public, pg_temp
+as $$
+begin
+  if exists (
+    select 1 from public.orders o
+    where exists (
+      select 1 from jsonb_array_elements(o.items) item
+      where item->>'product_id' = old.id::text
+    )
+  ) then
+    raise exception 'Products referenced by orders cannot be deleted. Deactivate the product instead.';
+  end if;
+  return old;
+end;
+$$;
+
+create trigger products_prevent_ordered_delete
+before delete on public.products
+for each row execute function public.prevent_ordered_product_delete();
+
 insert into public.store_settings (id, store_name, currency, delivery_fee)
 values (true, 'Your Store', 'NGN', 0);

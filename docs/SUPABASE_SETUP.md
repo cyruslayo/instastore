@@ -53,4 +53,6 @@ where tablename in ('products', 'orders', 'store_settings')
 
 Expected security conclusions: anon can select active products and execute `get_storefront_settings`, `create_store_order`, and `get_order_status`; anon cannot select/insert/update/delete orders or modify products. Only admins can select all products, manage products/settings, inspect orders, and execute `set_order_status`. Receipt uploads are limited to randomized `receipts/<uuid>.<extension>` paths; receipts are private and only admins can read them.
 
+Products referenced by historical orders cannot be hard-deleted. Deactivate those products instead. The status state machine allows `Pending Verification -> Processing` or `Cancelled`, `Processing -> Shipped` or `Cancelled`, and `Shipped -> Fulfilled`; `Fulfilled` and `Cancelled` are terminal, and repeated same-status calls are idempotent. Cancellation restores reserved inventory exactly once only before shipment; shipped and fulfilled orders cannot be cancelled through the MVP RPC. Customers remain guests.
+
 Confirm the application is configured for this new project only. It must never point at Botanica production data. There is no `store_id`, tenant system, customer login, subscription, payment gateway, or product-image upload in this MVP baseline.

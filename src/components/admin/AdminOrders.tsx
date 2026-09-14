@@ -40,10 +40,10 @@ export default function AdminOrders() {
   const filteredOrders = orders.filter((order) => {
     const matchesStatus = statusFilter === 'All' || order.status === statusFilter;
     const matchesSearch =
-      order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (order.user_id && order.user_id.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (order.shipping_address?.instagramHandle &&
-        order.shipping_address.instagramHandle.toLowerCase().includes(searchQuery.toLowerCase()));
+      (order.public_code || order.id).toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (order.customer_name && order.customer_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (order.customer_phone && order.customer_phone.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (order.customer_instagram && order.customer_instagram.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesStatus && matchesSearch;
   });
 
@@ -115,7 +115,7 @@ export default function AdminOrders() {
               className="bg-surface rounded-2xl border border-outline-variant/70 p-4 botanical-shadow space-y-3"
             >
               <div className="flex items-center justify-between">
-                <span className="font-mono font-bold text-primary text-sm">#{order.id}</span>
+                <span className="font-mono font-bold text-primary text-sm">{order.public_code || `#${order.id}`}</span>
                 <span
                   className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                     order.status === 'Fulfilled'
@@ -135,7 +135,7 @@ export default function AdminOrders() {
                 <div className="flex justify-between text-on-surface-variant">
                   <span>Customer:</span>
                   <span className="font-mono font-semibold text-primary truncate max-w-[180px]">
-                    {order.shipping_address?.instagramHandle || order.user_id}
+                    {order.customer_name || order.customer_instagram || "Guest customer"}
                   </span>
                 </div>
                 <div className="flex justify-between text-on-surface-variant">
@@ -195,12 +195,12 @@ export default function AdminOrders() {
               ) : (
                 filteredOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-surface-container-low/50 transition-colors">
-                    <td className="p-4 font-mono font-bold text-primary">#{order.id}</td>
+                    <td className="p-4 font-mono font-bold text-primary">{order.public_code || `#${order.id}`}</td>
                     <td className="p-4 text-on-surface-variant font-mono text-xs">
                       {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
                     </td>
                     <td className="p-4 text-primary font-mono text-xs truncate max-w-[160px]">
-                      {order.shipping_address?.instagramHandle || order.user_id}
+                      {order.customer_name || order.customer_instagram || "Guest customer"}
                     </td>
                     <td className="p-4 font-mono font-medium">{formatNaira(order.total)}</td>
                     <td className="p-4">

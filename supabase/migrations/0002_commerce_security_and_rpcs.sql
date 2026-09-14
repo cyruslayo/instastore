@@ -38,6 +38,7 @@ as $$
     s.account_name, s.account_number, s.announcement_enabled, s.announcement_text
   from public.store_settings s where s.id = true;
 $$;
+revoke all on function public.get_storefront_settings() from public;
 grant execute on function public.get_storefront_settings() to anon, authenticated;
 
 create or replace function public.create_store_order(
@@ -106,7 +107,7 @@ begin
   if p_total <> calculated_total then raise exception 'Submitted total does not match current prices'; end if;
 
   loop
-    generated_code := 'ORD-' || upper(encode(gen_random_bytes(8), 'hex'));
+      generated_code := 'ORD-' || upper(encode(gen_random_bytes(12), 'hex'));
     begin
       insert into public.orders (public_code, customer_name, customer_phone, customer_instagram, items, subtotal, shipping_fee, total, shipping_address, receipt_path)
       values (generated_code, btrim(p_customer_name), normalized_phone, nullif(btrim(p_customer_instagram), ''), trusted_items, calculated_subtotal, delivery, calculated_total, p_shipping_address, p_receipt_path)
@@ -119,6 +120,7 @@ begin
   return generated_code;
 end;
 $$;
+revoke all on function public.create_store_order(text, text, text, jsonb, numeric, jsonb, text) from public;
 grant execute on function public.create_store_order(text, text, text, jsonb, numeric, jsonb, text) to anon, authenticated;
 
 create or replace function public.set_order_status(p_order_id uuid, p_status text)
@@ -133,10 +135,20 @@ begin
   if p_status not in ('Pending Verification', 'Processing', 'Shipped', 'Fulfilled', 'Cancelled') then raise exception 'Invalid order status'; end if;
   select * into current_order from public.orders where id = p_order_id for update;
   if not found then raise exception 'Order not found'; end if;
-  if current_order.status = 'Cancelled' and p_status <> 'Cancelled' then raise exception 'Cancelled orders cannot be reopened'; end if;
-  if current_order.status = 'Cancelled' and p_status = 'Cancelled' then return current_order; end if;
-  if p_status = 'Cancelled' and not current_order.inventory_restocked then
-    update public.products p set inventory = p.inventory + (i.quantity)::integer
+  if current_order.status = p_status then return current_order; end if;
+
+  if (current_order.status, p_status) not in (
+    ('Pending Verification', 'Processing'),
+    ('Pending Verification', 'Cancelled'),
+    ('Processing', 'Shipped'),
+    ('Processing', 'Cancelled'),
+    ('Shipped', 'Fulfilled')
+  ) then
+    raise exception 'Invalid order status transition from % to %', current_order.status, p_status;
+  end if;
+
+  if p_status = 'Cancelled' then
+    update public.products p set inventory = p.inventory + i.quantity
     from jsonb_to_recordset(current_order.items) as i(product_id uuid, quantity integer)
     where p.id = i.product_id;
     get diagnostics restored_count = row_count;
@@ -148,6 +160,7 @@ begin
   return current_order;
 end;
 $$;
+revoke all on function public.set_order_status(uuid, text) from public;
 grant execute on function public.set_order_status(uuid, text) to authenticated;
 
 create or replace function public.get_order_status(p_public_code text, p_phone text)
@@ -156,9 +169,10 @@ language sql stable security definer set search_path = public, pg_temp
 as $$
   select o.public_code, o.items, o.subtotal, o.shipping_fee, o.total, o.status, o.shipping_address, o.created_at, o.updated_at
   from public.orders o
-  where o.public_code = btrim(p_public_code)
+  where o.public_code = upper(btrim(p_public_code))
     and o.customer_phone = regexp_replace(coalesce(p_phone, ''), '[^0-9+]', '', 'g')
     and length(btrim(coalesce(p_public_code, ''))) > 0
     and length(regexp_replace(coalesce(p_phone, ''), '[^0-9+]', '', 'g')) >= 7;
 $$;
+revoke all on function public.get_order_status(text, text) from public;
 grant execute on function public.get_order_status(text, text) to anon, authenticated;

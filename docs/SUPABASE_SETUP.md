@@ -15,7 +15,7 @@ This is the fresh-install path for a **new, empty Supabase project**. Never poin
 
 4. In Storage, manually create a bucket named `receipts`. Set it **private**, maximum file size to **5,242,880 bytes (5 MiB)**, and allowed MIME types to `image/jpeg`, `image/png`, and `application/pdf`. Do not create the bucket with SQL.
 5. In Storage, manually create a second bucket named `product-images`. Set it **public**, maximum file size to **5,242,880 bytes (5 MiB)**, and allowed MIME types to `image/jpeg`, `image/png`, and `image/webp`. Product images are public storefront assets; only admins can upload or delete them through Storage policies. Receipts are separate private data and must never be made public.
-6. Apply `supabase/migrations/0001_initial_commerce_schema.sql`, then `0002_commerce_security_and_rpcs.sql`, `0003_receipt_storage_policies.sql`, and `0004_product_image_storage_policies.sql` in filename order (Supabase CLI may be used locally, but do not link or push to a remote project).
+6. Apply `supabase/migrations/0001_initial_commerce_schema.sql`, then `0002_commerce_security_and_rpcs.sql`, `0003_receipt_storage_policies.sql`, `0004_product_image_storage_policies.sql`, and `0005_harden_order_status_rpc_privilege.sql` in filename order (Supabase CLI may be used locally, but do not link or push to a remote project).
 7. Create the first user in Supabase Auth (email/password or the configured Auth provider).
 8. Copy the Auth user's UUID and insert the matching admin profile in the SQL editor:
 
@@ -50,9 +50,14 @@ select policyname, tablename, cmd, roles
 from pg_policies
 where tablename in ('products', 'orders', 'store_settings')
    or tablename = 'objects';
+select
+  has_function_privilege('anon', 'public.set_order_status(uuid,text)', 'EXECUTE') as anon_set_order_status,
+  has_function_privilege('authenticated', 'public.set_order_status(uuid,text)', 'EXECUTE') as authenticated_set_order_status;
 ```
 
-Expected security conclusions: anon can select active products and execute `get_storefront_settings`, `create_store_order`, and `get_order_status`; anon cannot select/insert/update/delete orders or modify products. Only admins can select all products, manage products/settings, inspect orders, and execute `set_order_status`. Receipt uploads are limited to randomized `receipts/<uuid>.<extension>` paths; receipts are private and only admins can read them.
+Expected security conclusions: anon can select active products and execute `get_storefront_settings`, `create_store_order`, and `get_order_status`; anon cannot execute `set_order_status`, select/insert/update/delete orders, or modify products. Authenticated admins can select all products, manage products/settings, inspect orders, and execute `set_order_status`. Receipt uploads are limited to randomized `receipts/<uuid>.<extension>` paths; receipts are private and only admins can read them.
+
+For the order-status privilege check, expect `anon_set_order_status = false` and `authenticated_set_order_status = true`.
 
 To verify product-image policies, use:
 

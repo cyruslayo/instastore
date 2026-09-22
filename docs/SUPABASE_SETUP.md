@@ -26,6 +26,8 @@ This is the fresh-install path for a **new, empty Supabase project**. Never run 
    - `0007_multi_store_foundation.sql`
    - `0008_tenant_security_and_rpcs.sql`
    - `0009_tenant_storage_policies.sql`
+   - `0010_storefront_tenancy_and_delivery_zones.sql`
+   - `0011_trusted_delivery_checkout.sql`
 7. Create the first user in Supabase Auth (email/password or the configured Auth provider).
 8. Copy the Auth user's UUID and insert the matching admin profile for the existing `default-store` in the SQL editor:
 
@@ -66,7 +68,35 @@ There is no self-signup and no store switcher. Each merchant belongs to exactly 
            (select id from public.stores where slug = 'my-store'));
    ```
 
-Do not expose public multi-store URLs yet; `default-store` remains the only live public storefront until T02.
+Public storefronts are live at `/s/<store-slug>` (for example `/s/default-store`). Legacy customer URLs (`/`, `/shop`, `/cart`, `/checkout`, `/track`, `/product/<slug>`, `/oils`) redirect to the matching `default-store` route.
+
+## Delivery zones
+
+Delivery pricing is per store and per city. Only `Abuja` and `Lagos` are supported. Migrations never insert delivery zones; the merchant or operator must enter real prices (through `/admin/delivery`, or directly with SQL before a merchant exists):
+
+```sql
+insert into public.delivery_zones (store_id, city, name, provider, fee, estimate, note)
+values (
+  (select id from public.stores where slug = 'default-store'),
+  'Abuja', 'Wuse 2', 'Private Rider', 2500, 'Same day', null
+);
+```
+
+Checkout requires an active delivery zone for the selected city and rejects orders without one. `store_settings.delivery_fee` is deprecated and is no longer read by checkout.
+
+## Deployment sequence for the delivery contract change
+
+`0011` changes the checkout contract, so apply the migrations before deploying the updated application:
+
+1. `pnpm check`
+2. `pnpm build`
+3. Apply migration `0010_storefront_tenancy_and_delivery_zones.sql`
+4. Apply migration `0011_trusted_delivery_checkout.sql`
+5. Configure real delivery zones for `default-store`
+6. Deploy the application
+7. Test `default-store` checkout
+
+Do not create fake delivery zones in migrations.
 
 ## Storage path formats
 
@@ -168,6 +198,47 @@ values ((select id from public.stores where slug = 'store-b'), 'Store B', 'NGN',
 
 Run each check impersonating the relevant role. Merchant A must NOT be able to: read Store B draft products, insert/update/delete a Store B product, read Store B orders, change Store B order status, update Store B settings, read Store B private receipts, upload into Store B's product-image folder, or delete Store B's images. Merchant B has the same isolation from Store A.
 
-Anonymous users must: be able to read active `default-store` products; be unable to read drafts, private orders, or settings; be unable to change orders/settings or manage product images; be able to upload a correctly formatted `receipts/<slug>/<uuid>.<ext>` object; and be unable to download private receipts.
+Anonymous users must: be able to read active products and active delivery zones for any active store; be unable to read drafts, private orders, or settings; be unable to change orders/settings or manage product images; be able to upload a correctly formatted `receipts/<slug>/<uuid>.<ext>` object for an active store; and be unable to download private receipts.
 
-`create_store_order()` must reject a product from a different store, an unknown store, a suspended store, and a receipt-namespace mismatch, while preserving stock locking and trusted price calculation. `set_order_status()` must reject a cross-store order ID (returns "Order not found").
+`create_store_order()` must reject a product from a different store, an unknown store, a suspended store, a receipt-namespace mismatch, a missing delivery zone, a delivery zone owned by another store, an inactive delivery zone, and a manipulated total, while preserving stock locking and trusted price calculation. `set_order_status()` must reject a cross-store order ID (returns "Order not found").
+`get_order_status()` must require the store slug and must not return another store's order.
+
+## Storefront and delivery verification
+
+Run these after applying `0010` and `0011` to a disposable project. Runtime verification requires an actual Supabase/Postgres instance; if none is available, review the SQL statically and treat this as the procedure to run.
+
+Schema and RLS:
+
+```sql
+-- delivery_zones exists with RLS enabled.
+select to_regclass('public.delivery_zones') as delivery_zones_table;
+select tablename, rowsecurity from pg_tables
+where schemaname = 'public' and tablename in ('delivery_zones', 'stores', 'products');
+
+-- Product slugs are unique per store, not globally.
+select conname, pg_get_constraintdef(oid)
+from pg_constraint
+where conrelid = 'public.products'::regclass and contype = 'u';
+
+-- orders carries the delivery snapshot columns.
+select column_name from information_schema.columns
+where table_schema = 'public' and table_name = 'orders'
+  and column_name in ('delivery_zone_id', 'delivery_city', 'delivery_zone_name',
+                      'delivery_provider', 'delivery_estimate');
+
+-- create_store_order now takes a delivery zone id.
+select proname, pg_get_function_arguments(oid)
+from pg_proc where proname in ('create_store_order', 'get_order_status');
+```
+
+Behavioral checks (impersonate `anon` unless noted):
+
+- Two active stores can each own a product with the same slug; one store cannot duplicate its own slug.
+- Anon can read active products and active delivery zones for Store A and Store B, cannot read drafts, and cannot read anything for a suspended store.
+- A merchant can manage only their own store's delivery zones; anon can read only active zones.
+- Receipt upload rejects an unknown or suspended store namespace.
+- `create_store_order()` fails for an unknown store, a suspended store, a cross-store delivery zone id, an inactive zone, a missing zone, a cross-store product id, a manipulated product total, and a manipulated delivery total.
+- A successful order's `delivery_city`, `delivery_zone_name`, `delivery_provider`, `delivery_estimate`, and `shipping_fee` match the selected zone.
+- Changing a zone's fee afterwards does not change an existing order.
+- Stock locking still rejects an order that exceeds inventory; cancelling an order restores stock exactly once.
+- `get_order_status()` returns nothing when the store slug is wrong, and requires code + phone + store slug.

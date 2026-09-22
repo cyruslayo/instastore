@@ -12,9 +12,9 @@ and independently reviewable.
 | Complete | T01A | Tenant data foundation            |
 | Complete | T01B | Tenant security and commerce RPCs |
 | Complete | T01C | Tenant-aware admin and storage    |
-| Next     | T02  | Store-scoped storefront           |
-| Pending  | T03  | Abuja and Lagos delivery zones    |
-| Pending  | T04  | Product merchandising             |
+| Complete | T02  | Store-scoped storefront           |
+| Complete | T03  | Abuja and Lagos delivery zones    |
+| Next     | T04  | Product merchandising             |
 | Pending  | T05  | Search and catalog discovery      |
 | Pending  | T06  | Store branding                    |
 | Pending  | T07  | Merchant operations               |

@@ -59,10 +59,14 @@ export default function AdminProducts() {
     setError(null);
     try {
       const { getSupabase } = await import("@/lib/supabase");
+      const { getCurrentAdminProfile } = await import("@/lib/auth");
       const supabase = getSupabase();
+      const profile = await getCurrentAdminProfile();
+      if (!profile) throw new Error("No active merchant store.");
       const { data, error } = await supabase
         .from("products")
         .select("*")
+        .eq("store_id", profile.store_id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       setProducts(data ?? []);

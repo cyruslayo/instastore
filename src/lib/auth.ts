@@ -19,28 +19,58 @@ export async function getSession() {
   }
 }
 
-export async function isAdmin() {
+export interface AdminProfile {
+  id: string;
+  email: string | null;
+  role: 'admin';
+  store_id: string;
+}
+
+// Resolves the current authenticated merchant's profile plus their active
+// store. Returns null when there is no valid merchant profile, the store is
+// missing, or the store is suspended.
+export async function getCurrentAdminProfile(): Promise<AdminProfile | null> {
   try {
     const supabase = getSupabase();
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     if (sessionError || !sessionData.session?.user?.id) {
-      return false;
+      return null;
     }
 
     const userId = sessionData.session.user.id;
-    const { data, error } = await supabase
+    const { data: profile, error } = await supabase
       .from('profiles')
-      .select('role')
+      .select('id, email, role, store_id')
       .eq('id', userId)
       .maybeSingle();
 
-    if (error || !data) {
-      return false;
+    if (error || !profile || profile.role !== 'admin' || !profile.store_id) {
+      return null;
     }
-    return data.role === 'admin';
+
+    const { data: store, error: storeError } = await supabase
+      .from('stores')
+      .select('status')
+      .eq('id', profile.store_id)
+      .maybeSingle();
+
+    if (storeError || !store || store.status !== 'active') {
+      return null;
+    }
+
+    return {
+      id: profile.id,
+      email: profile.email ?? null,
+      role: 'admin',
+      store_id: profile.store_id,
+    };
   } catch {
-    return false;
+    return null;
   }
+}
+
+export async function isAdmin() {
+  return (await getCurrentAdminProfile()) !== null;
 }
 
 // Maps a Supabase AuthApiError to a human-readable message with an

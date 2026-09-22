@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { getSupabase } from '@/lib/supabase';
+import { getCurrentAdminProfile } from '@/lib/auth';
 import { formatNaira } from '@/lib/utils';
 
 interface DashboardOrder {
@@ -38,9 +39,11 @@ export default function AdminDashboard() {
     setError(null);
     try {
       const supabase = getSupabase();
+      const profile = await getCurrentAdminProfile();
+      if (!profile) throw new Error('No active merchant store.');
       const [ordersResult, productsResult] = await Promise.all([
-        supabase.from('orders').select('id,public_code,total,status,customer_name,customer_instagram,created_at').order('created_at', { ascending: false }),
-        supabase.from('products').select('id').eq('is_active', true),
+        supabase.from('orders').select('id,public_code,total,status,customer_name,customer_instagram,created_at').eq('store_id', profile.store_id).order('created_at', { ascending: false }),
+        supabase.from('products').select('id').eq('store_id', profile.store_id).eq('is_active', true),
       ]);
 
       if (ordersResult.error) throw ordersResult.error;

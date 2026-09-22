@@ -1,5 +1,6 @@
 /** Canonical settings shared by the public storefront and admin. */
 import { getSupabase } from "./supabase";
+import { getCurrentAdminProfile } from "./auth";
 
 export interface BankSettings {
   bankName: string;
@@ -141,6 +142,10 @@ export async function saveSiteSettings(
     throw new Error("Delivery fee must be a non-negative number.");
   if (!isSupabaseConfigured())
     throw new Error("Supabase is not configured for live site settings.");
+  const profile = await getCurrentAdminProfile();
+  if (!profile) {
+    throw new Error("No active merchant store is associated with this account.");
+  }
   const updated = normalise(settings);
   const { error } = await getSupabase()
     .from("store_settings")
@@ -158,7 +163,7 @@ export async function saveSiteSettings(
       announcement_enabled: updated.announcement.enabled,
       announcement_text: updated.announcement.message,
     })
-    .eq("id", true);
+    .eq("store_id", profile.store_id);
   if (error) throw error;
   cacheSiteSettings(updated);
   if (typeof window !== "undefined")

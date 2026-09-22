@@ -185,10 +185,19 @@ export default function ProductFormModal({
         is_active: formData.is_active,
       };
       const { getSupabase } = await import("@/lib/supabase");
+      const { getCurrentAdminProfile } = await import("@/lib/auth");
       const supabase = getSupabase();
-      const result = product?.id
-        ? await supabase.from("products").update(payload).eq("id", product.id)
-        : await supabase.from("products").insert(payload);
+      let result;
+      if (product?.id) {
+        result = await supabase.from("products").update(payload).eq("id", product.id);
+      } else {
+        const profile = await getCurrentAdminProfile();
+        if (!profile)
+          throw new Error("No active merchant store is associated with this account.");
+        result = await supabase
+          .from("products")
+          .insert({ ...payload, store_id: profile.store_id });
+      }
       if (result.error) throw result.error;
       onSaved();
       onClose();

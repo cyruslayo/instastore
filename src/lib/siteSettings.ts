@@ -17,7 +17,10 @@ export interface AnnouncementSettings {
 export interface SiteSettings {
   storeName: string;
   tagline: string;
+  description: string;
   logoUrl: string;
+  heroImageUrl: string;
+  primaryColor: string;
   instagramHandle: string;
   whatsappNumber: string;
   currency: "NGN";
@@ -31,7 +34,10 @@ export type StorefrontSettings = SiteSettings;
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   storeName: "Your Store",
   tagline: "",
+  description: "",
   logoUrl: "",
+  heroImageUrl: "",
+  primaryColor: "#18231a",
   instagramHandle: "",
   whatsappNumber: "",
   currency: "NGN",
@@ -63,10 +69,15 @@ function normalise(
   value: Partial<SiteSettings> | null | undefined,
 ): SiteSettings {
   const fee = Number(value?.deliveryFee ?? DEFAULT_SITE_SETTINGS.deliveryFee);
+  const providedPrimaryColor = value?.primaryColor;
+  const primaryColor = providedPrimaryColor && /^#[0-9a-fA-F]{6}$/.test(providedPrimaryColor)
+    ? providedPrimaryColor.toLowerCase()
+    : DEFAULT_SITE_SETTINGS.primaryColor;
   return {
     ...DEFAULT_SITE_SETTINGS,
     ...(value || {}),
     currency: "NGN",
+    primaryColor,
     deliveryFee: Number.isFinite(fee) && fee >= 0 ? fee : 0,
     bank: { ...DEFAULT_SITE_SETTINGS.bank, ...(value?.bank || {}) },
     announcement: {
@@ -84,7 +95,10 @@ function fromRow(
       ? {
           storeName: String(row.store_name ?? ""),
           tagline: String(row.tagline ?? ""),
+          description: String(row.description ?? ""),
           logoUrl: String(row.logo_url ?? ""),
+          heroImageUrl: String(row.hero_image_url ?? ""),
+          primaryColor: String(row.primary_color ?? "#18231a"),
           instagramHandle: String(row.instagram_handle ?? ""),
           whatsappNumber: String(row.whatsapp_number ?? ""),
           currency: "NGN",
@@ -158,6 +172,8 @@ export async function saveSiteSettings(
 ): Promise<SiteSettings> {
   if (typeof settings.deliveryFee !== "number" || !Number.isFinite(settings.deliveryFee) || settings.deliveryFee < 0)
     throw new Error("Delivery fee must be a non-negative number.");
+  if (!/^#[0-9a-fA-F]{6}$/.test(settings.primaryColor))
+    throw new Error("Primary color must be a six-digit hex value, such as #18231a.");
   if (!isSupabaseConfigured())
     throw new Error("Supabase is not configured for live site settings.");
   const profile = await getCurrentAdminProfile();
@@ -170,7 +186,10 @@ export async function saveSiteSettings(
     .update({
       store_name: updated.storeName,
       tagline: updated.tagline,
+      description: updated.description,
       logo_url: updated.logoUrl,
+      hero_image_url: updated.heroImageUrl,
+      primary_color: updated.primaryColor.toLowerCase(),
       instagram_handle: updated.instagramHandle,
       whatsapp_number: updated.whatsappNumber,
       currency: "NGN",

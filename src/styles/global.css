@@ -48,6 +48,8 @@
   --color-on-tertiary-fixed-variant: #4a4640;
   --color-background: #faf9f7;
   --color-on-background: #1a1c1b;
+  --color-store-primary: var(--store-primary, #18231a);
+  --color-store-on-primary: var(--store-on-primary, #ffffff);
 
   --font-display-lg: 'Bodoni Moda', serif;
   --font-display-lg-mobile: 'Bodoni Moda', serif;

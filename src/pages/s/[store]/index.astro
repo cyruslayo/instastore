@@ -1,11 +1,12 @@
 ---
 import Layout from '@/layouts/Layout.astro';
 import StoreUnavailable from '@/components/storefront/StoreUnavailable.astro';
-import ProductCard from '@/components/storefront/ProductCard.astro';
+import ProductCard from '@/components/storefront/ProductCard';
 import { getPublicStoreBySlug } from '@/lib/stores';
 import { getActiveProducts } from '@/lib/products';
 import { fetchLiveSiteSettings, DEFAULT_SITE_SETTINGS } from '@/lib/siteSettings';
 import { storePath } from '@/lib/storePaths';
+import { getHomeProducts } from '@/lib/catalogDiscovery';
 import type { Product, Store } from '@/lib/types';
 
 export const prerender = false;
@@ -22,14 +23,19 @@ if (store) {
 }
 const storeName = settings.storeName.trim() || 'Your Store';
 const tagline = settings.tagline.trim();
+const description = settings.description.trim();
+const featuredProducts = getHomeProducts(products);
 const homePath = storePath(storeSlug);
 const shopPath = storePath(storeSlug, 'shop');
 ---
 {store ? (
-<Layout pathname={homePath} storeSlug={storeSlug} title={`${storeName} | Storefront`} description={`Browse products from ${storeName}.`} siteName={storeName}>
+<Layout pathname={homePath} storeSlug={storeSlug} title={`${storeName} | Storefront`} description={description || tagline || `Browse products from ${storeName}.`} image={settings.heroImageUrl || settings.logoUrl || undefined} siteName={storeName}>
   <main class="w-full">
-    <section class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-section-gap md:py-24"><div class="max-w-2xl"><p class="font-label-sm text-label-sm uppercase tracking-widest text-secondary mb-stack-sm">{storeName}</p><h1 class="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg text-primary tracking-tight">{storeName}</h1>{tagline && <p class="font-body-lg text-body-lg text-on-surface-variant mt-stack-md max-w-xl">{tagline}</p>}<p class="font-body-lg text-body-lg text-on-surface-variant mt-stack-md max-w-xl">Browse currently available products and place your order directly.</p><a href={shopPath} class="inline-flex items-center justify-center mt-stack-lg px-6 py-3 rounded-full bg-primary text-on-primary font-label-sm text-label-sm uppercase tracking-widest hover:opacity-90 transition-opacity">Shop Available Products</a></div></section>
-    <section class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop pb-section-gap" aria-labelledby="available-products-heading"><div class="flex items-end justify-between gap-4 border-b border-outline-variant/30 pb-stack-sm mb-stack-lg"><div><p class="font-label-sm text-label-sm uppercase tracking-widest text-secondary">{storeName}</p><h2 id="available-products-heading" class="font-headline-md text-headline-md text-primary mt-unit">Available Products</h2></div><a href={shopPath} class="font-label-sm text-label-sm text-secondary hover:text-primary">View all</a></div>{products.length === 0 ? <p class="py-16 text-center font-body-md text-body-md text-on-surface-variant">There are no products available right now. Please check back soon.</p> : <div class="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-gutter items-start">{products.slice(0, 4).map((product) => <ProductCard product={product} storeSlug={storeSlug} />)}</div>}</section>
+    <section class:list={["max-w-container-max mx-auto grid items-center gap-gutter px-margin-mobile py-section-gap md:px-margin-desktop md:py-24", settings.heroImageUrl && "md:grid-cols-2"]} aria-labelledby="store-title">
+      <div class="max-w-2xl"><p class="mb-stack-sm font-label-sm text-label-sm uppercase tracking-widest text-store-primary">{storeName}</p><h1 id="store-title" class="font-display-lg-mobile text-display-lg-mobile tracking-tight text-primary md:font-display-lg md:text-display-lg">{storeName}</h1>{tagline && <p class="mt-stack-md font-body-lg text-body-lg text-on-surface-variant">{tagline}</p>}{description && <p class="mt-stack-md max-w-xl whitespace-pre-line font-body-md text-body-md text-on-surface-variant">{description}</p>}{!description && <p class="mt-stack-md max-w-xl font-body-md text-body-md text-on-surface-variant">Browse currently available products and place your order directly.</p>}<a href={shopPath} class="mt-stack-lg inline-flex items-center justify-center rounded-full bg-store-primary px-6 py-3 font-label-sm text-label-sm uppercase tracking-widest text-store-on-primary transition-opacity hover:opacity-90">Shop Available Products</a></div>
+      {settings.heroImageUrl && <div class="overflow-hidden rounded-2xl bg-surface-container-low botanical-shadow"><img src={settings.heroImageUrl} alt={`${storeName} storefront`} referrerpolicy="no-referrer" fetchpriority="high" class="aspect-[4/3] w-full object-cover md:aspect-[5/4]" /></div>}
+    </section>
+    <section class="max-w-container-max mx-auto px-margin-mobile pb-section-gap md:px-margin-desktop" aria-labelledby="available-products-heading"><div class="mb-stack-lg flex items-end justify-between gap-4 border-b border-outline-variant/30 pb-stack-sm"><div><p class="font-label-sm text-label-sm uppercase tracking-widest text-store-primary">{storeName}</p><h2 id="available-products-heading" class="mt-unit font-headline-md text-headline-md text-primary">{products.some((product) => product.featured) ? 'Featured Products' : 'New Products'}</h2></div><a href={shopPath} class="font-label-sm text-label-sm text-store-primary hover:text-primary">View all</a></div>{featuredProducts.length === 0 ? <p class="py-16 text-center font-body-md text-body-md text-on-surface-variant">There are no products available right now. Please check back soon.</p> : <div class="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] items-start gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 md:gap-gutter">{featuredProducts.map((product) => <ProductCard product={product} storeSlug={storeSlug} />)}</div>}</section>
   </main>
 </Layout>
 ) : (

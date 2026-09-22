@@ -3,6 +3,8 @@ import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import StorefrontFooter from '@/components/storefront/StorefrontFooter';
 import MotionProvider from '@/components/MotionProvider';
+import { fetchLiveSiteSettings, DEFAULT_SITE_SETTINGS } from '@/lib/siteSettings';
+import { getStoreOnPrimary } from '@/lib/storeBranding';
 import '@/styles/global.css';
 
 interface Props {
@@ -27,6 +29,11 @@ const {
 
 const siteUrl = Astro.site ? Astro.site.toString().replace(/\/$/, '') : (Astro.url.origin || 'https://instastore.local');
 const canonicalUrl = new URL(pathname, siteUrl).toString();
+let storefrontColor = DEFAULT_SITE_SETTINGS.primaryColor;
+try { storefrontColor = (await fetchLiveSiteSettings(storeSlug)).primaryColor; } catch { /* Keep safe default. */ }
+const hex = /^#[0-9a-fA-F]{6}$/.test(storefrontColor) ? storefrontColor : '#18231a';
+const onColor = getStoreOnPrimary(hex);
+const brandStyle = `--store-primary:${hex.toLowerCase()};--store-on-primary:${onColor}`;
 ---
 
 <!doctype html>
@@ -57,7 +64,7 @@ const canonicalUrl = new URL(pathname, siteUrl).toString();
     <meta name="twitter:description" content={description} />
     {image && <meta name="twitter:image" content={image} />}
   </head>
-  <body class="bg-background text-on-background antialiased selection:bg-secondary-container selection:text-on-secondary-container min-h-screen flex flex-col pb-[calc(80px+env(safe-area-inset-bottom,0px))] md:pb-0">
+  <body style={brandStyle} class="storefront-theme bg-background text-on-background antialiased selection:bg-secondary-container selection:text-on-secondary-container min-h-screen flex flex-col pb-[calc(80px+env(safe-area-inset-bottom,0px))] md:pb-0">
     <a href="#content" class="visually-hidden skip-link">Skip to content</a>
     <Header pathname={pathname} storeSlug={storeSlug} client:load />
     <MotionProvider client:load>

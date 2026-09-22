@@ -34,7 +34,7 @@ export default function StorefrontFooter({ storeSlug }: { storeSlug: string }) {
       className="max-w-container-max mx-auto w-full px-margin-mobile md:px-margin-desktop pb-section-gap"
       aria-label="Store contact links"
     >
-      <div className="border-t border-outline-variant/30 pt-stack-md flex flex-wrap gap-5 font-label-sm text-label-sm text-secondary">
+      <div className="border-t border-outline-variant/30 pt-stack-md flex flex-wrap gap-5 font-label-sm text-label-sm text-store-primary">
         <span className="text-on-surface-variant">
           Connect with {storeName}
         </span>

@@ -46,7 +46,7 @@ export default function Header({
         settings.announcement.message.trim() && (
           <div
             role="status"
-            className="bg-primary text-on-primary text-center px-4 py-2 font-body-sm text-xs"
+            className="bg-store-primary text-store-on-primary text-center px-4 py-2 font-body-sm text-xs"
           >
             {settings.announcement.message}
           </div>
@@ -102,7 +102,7 @@ export default function Header({
             {navigation.map(({ href, label }) => (
               <a
                 href={href}
-                className={`font-label-sm text-label-sm uppercase tracking-widest ${pathname === href ? "text-primary border-b-2 border-primary pb-1" : "text-on-surface-variant hover:text-primary"}`}
+                className={`font-label-sm text-label-sm uppercase tracking-widest ${pathname === href ? "text-store-primary border-b-2 border-store-primary pb-1" : "text-on-surface-variant hover:text-store-primary"}`}
                 key={href}
               >
                 {label}

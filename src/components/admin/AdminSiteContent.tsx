@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Check, CreditCard, Megaphone, Store } from "lucide-react";
+import { deleteManagedStoreAsset, uploadStoreHero, uploadStoreLogo } from "@/lib/storeAssets";
 import {
   DEFAULT_SITE_SETTINGS,
   fetchLiveSiteSettings,
@@ -18,6 +19,10 @@ export default function AdminSiteContent() {
   const [activeTab, setActiveTab] = useState<
     "store" | "commerce" | "announcement"
   >("store");
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [heroFile, setHeroFile] = useState<File | null>(null);
+  const [removeLogo, setRemoveLogo] = useState(false);
+  const [removeHero, setRemoveHero] = useState(false);
   const loadLiveSettings = () => {
     setLiveSettingsLoaded(false);
     setError(null);
@@ -50,14 +55,35 @@ export default function AdminSiteContent() {
       setError("Delivery fee must be a non-negative number.");
       return;
     }
+    if (!/^#[0-9a-fA-F]{6}$/.test(settings.primaryColor)) {
+      setError("Primary color must be a six-digit hex value, such as #18231a.");
+      return;
+    }
     setSaving(true);
+    const uploadedAssets: string[] = [];
     try {
-      setSettings(await saveSiteSettings(settings));
+      const nextSettings = { ...settings };
+      if (logoFile) { nextSettings.logoUrl = await uploadStoreLogo(logoFile); uploadedAssets.push(nextSettings.logoUrl); }
+      else if (removeLogo) nextSettings.logoUrl = "";
+      if (heroFile) { nextSettings.heroImageUrl = await uploadStoreHero(heroFile); uploadedAssets.push(nextSettings.heroImageUrl); }
+      else if (removeHero) nextSettings.heroImageUrl = "";
+      const savedSettings = await saveSiteSettings(nextSettings);
+      const removedAssets = [settings.logoUrl !== savedSettings.logoUrl ? settings.logoUrl : "", settings.heroImageUrl !== savedSettings.heroImageUrl ? settings.heroImageUrl : ""].filter(Boolean);
+      let cleanupFailed = false;
+      for (const asset of removedAssets) {
+        try { await deleteManagedStoreAsset(asset); } catch (cleanupError) { cleanupFailed = true; console.warn("Settings saved, but an old managed store image could not be cleaned up.", cleanupError); }
+      }
+      setSettings(savedSettings);
+      setLogoFile(null); setHeroFile(null); setRemoveLogo(false); setRemoveHero(false);
       setSaved(true);
       window.setTimeout(() => setSaved(false), 3000);
+      if (cleanupFailed) setError("Settings saved, but one or more old images could not be cleaned up.");
     } catch (saveError) {
+      for (const asset of uploadedAssets) {
+        try { await deleteManagedStoreAsset(asset); } catch (cleanupError) { console.warn("Unable to clean up an uncommitted store image.", cleanupError); }
+      }
       console.error(saveError);
-      setError("Store settings could not be saved.");
+      setError(saveError instanceof Error ? saveError.message : "Store settings could not be saved.");
     } finally {
       setSaving(false);
     }
@@ -111,13 +137,19 @@ export default function AdminSiteContent() {
             onChange={(value) => update("tagline", value)}
             inputClass={inputClass}
           />
-          <Field
-            label="Logo URL"
-            value={settings.logoUrl}
-            onChange={(value) => update("logoUrl", value)}
-            inputClass={inputClass}
-            type="url"
-          />
+          <label className="block space-y-1.5">
+            <span className="font-label-sm text-xs uppercase tracking-wider text-primary font-bold">Store description</span>
+            <textarea rows={4} value={settings.description} onChange={(event) => update("description", event.target.value)} className={inputClass} />
+          </label>
+          <AssetField label="Logo" value={settings.logoUrl} removed={removeLogo} file={logoFile} onFile={setLogoFile} onRemove={() => { setRemoveLogo(true); setLogoFile(null); }} onUndoRemove={() => setRemoveLogo(false)} inputClass={inputClass} />
+          <AssetField label="Hero image" value={settings.heroImageUrl} removed={removeHero} file={heroFile} onFile={setHeroFile} onRemove={() => { setRemoveHero(true); setHeroFile(null); }} onUndoRemove={() => setRemoveHero(false)} inputClass={inputClass} />
+          <div className="grid gap-3 sm:grid-cols-[auto_1fr] sm:items-end">
+            <label className="block space-y-1.5">
+              <span className="font-label-sm text-xs uppercase tracking-wider text-primary font-bold">Primary brand color</span>
+              <input type="color" value={/^#[0-9a-fA-F]{6}$/.test(settings.primaryColor) ? settings.primaryColor : "#18231a"} onChange={(event) => update("primaryColor", event.target.value.toLowerCase())} className="h-11 w-20 cursor-pointer rounded-lg border border-outline bg-surface p-1" />
+            </label>
+            <Field label="Hex value" value={settings.primaryColor} onChange={(value) => update("primaryColor", value)} inputClass={inputClass} maxLength={7} placeholder="#18231a" />
+          </div>
           <Field
             label="Instagram handle"
             value={settings.instagramHandle}
@@ -267,4 +299,18 @@ function Field({
       />
     </label>
   );
+}
+
+function AssetField({ label, value, removed, file, onFile, onRemove, onUndoRemove, inputClass }: {
+  label: string; value: string; removed: boolean; file: File | null;
+  onFile: (file: File | null) => void; onRemove: () => void; onUndoRemove: () => void; inputClass: string;
+}) {
+  return <div className="space-y-3">
+    <span className="block font-label-sm text-xs uppercase tracking-wider text-primary font-bold">{label}</span>
+    {value && !removed && <img src={value} alt={`${label} preview`} referrerPolicy="no-referrer" className="max-h-32 max-w-56 rounded-xl border border-outline-variant object-contain" />}
+    {file && <p className="text-xs text-on-surface-variant">Selected: {file.name}</p>}
+    <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => onFile(event.target.files?.[0] || null)} className={`${inputClass} file:mr-3 file:rounded-lg file:border-0 file:bg-surface-container file:px-3 file:py-1`} />
+    <p className="text-[11px] text-on-surface-variant">JPEG, PNG, or WebP. Maximum 5 MiB.</p>
+    {removed ? <button type="button" onClick={onUndoRemove} className="text-xs text-secondary underline">Keep existing {label.toLowerCase()}</button> : value && <button type="button" onClick={onRemove} className="text-xs text-error underline">Remove {label.toLowerCase()}</button>}
+  </div>;
 }

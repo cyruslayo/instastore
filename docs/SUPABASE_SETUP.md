@@ -1,6 +1,6 @@
 # InstaStore Supabase setup
 
-This is the fresh-install path for a **new, empty Supabase project**. Never point it at Botanica production or run these migrations against an existing project.
+This is the fresh-install path for a **new, empty Supabase project**. Never run these migrations against an existing project that already has production data.
 
 ## Setup
 
@@ -15,7 +15,15 @@ This is the fresh-install path for a **new, empty Supabase project**. Never poin
 
 4. In Storage, manually create a bucket named `receipts`. Set it **private**, maximum file size to **5,242,880 bytes (5 MiB)**, and allowed MIME types to `image/jpeg`, `image/png`, and `application/pdf`. Do not create the bucket with SQL.
 5. In Storage, manually create a second bucket named `product-images`. Set it **public**, maximum file size to **5,242,880 bytes (5 MiB)**, and allowed MIME types to `image/jpeg`, `image/png`, and `image/webp`. Product images are public storefront assets; only admins can upload or delete them through Storage policies. Receipts are separate private data and must never be made public.
-6. Apply `supabase/migrations/0001_initial_commerce_schema.sql`, then `0002_commerce_security_and_rpcs.sql`, `0003_receipt_storage_policies.sql`, `0004_product_image_storage_policies.sql`, and `0005_harden_order_status_rpc_privilege.sql` in filename order (Supabase CLI may be used locally, but do not link or push to a remote project).
+6. Apply the migrations in filename order (Supabase CLI may be used locally, but do not link or push to a remote project):
+
+   - `0001_initial_commerce_schema.sql`
+   - `0002_commerce_security_and_rpcs.sql`
+   - `0003_receipt_storage_policies.sql`
+   - `0004_product_image_storage_policies.sql`
+   - `0005_harden_order_status_rpc_privilege.sql`
+   - `0006_qualify_order_code_random_bytes.sql`
+   - `0007_multi_store_foundation.sql`
 7. Create the first user in Supabase Auth (email/password or the configured Auth provider).
 8. Copy the Auth user's UUID and insert the matching admin profile in the SQL editor:
 
@@ -70,6 +78,68 @@ where schemaname = 'storage' and tablename = 'objects'
 
 The expected product-image policy model is admin-only INSERT, SELECT, and DELETE scoped to `bucket_id = 'product-images'`; anonymous and non-admin authenticated users cannot write. The bucket's public setting allows customer-facing image URLs, while receipts remain private and use separate policies.
 
+### Tenant verification
+
+Run these after applying `0007_multi_store_foundation.sql`:
+
+```sql
+-- public.stores exists and RLS is enabled.
+select to_regclass('public.stores') as stores_table;
+select tablename, rowsecurity
+from pg_tables
+where schemaname = 'public' and tablename = 'stores';
+
+-- Exactly one initial store with slug default-store.
+select id, slug, name, status from public.stores;
+select count(*) as default_store_count
+from public.stores where slug = 'default-store';
+
+-- No null store_id remains in any backfilled table (all counts must be 0).
+select
+  (select count(*) from public.profiles where store_id is null)      as profiles_null_store,
+  (select count(*) from public.products where store_id is null)      as products_null_store,
+  (select count(*) from public.orders where store_id is null)        as orders_null_store,
+  (select count(*) from public.store_settings where store_id is null) as settings_null_store;
+
+-- No orphaned store_id references (all counts must be 0).
+select
+  (select count(*) from public.profiles p left join public.stores s on s.id = p.store_id where s.id is null)      as profiles_orphans,
+  (select count(*) from public.products p left join public.stores s on s.id = p.store_id where s.id is null)      as products_orphans,
+  (select count(*) from public.orders o left join public.stores s on s.id = o.store_id where s.id is null)        as orders_orphans,
+  (select count(*) from public.store_settings st left join public.stores s on s.id = st.store_id where s.id is null) as settings_orphans;
+
+-- store_settings.store_id is unique.
+select count(*) = count(distinct store_id) as store_settings_store_id_unique
+from public.store_settings;
+
+-- Relevant constraints and indexes exist.
+select conname, contype
+from pg_constraint
+where conrelid in ('public.stores'::regclass, 'public.store_settings'::regclass)
+  and conname in ('stores_slug_url_safe', 'stores_status_valid', 'store_settings_store_id_unique')
+order by conname;
+
+select indexname
+from pg_indexes
+where tablename in ('profiles', 'products', 'orders')
+  and indexname in ('profiles_store_id_idx', 'products_store_id_idx',
+                    'orders_store_id_created_at_idx', 'orders_store_id_status_idx')
+order by indexname;
+```
+
+Expected results: `stores_table` is not null, `rowsecurity` is `true`, `default_store_count` is `1`, every null/orphan count is `0`, `store_settings_store_id_unique` is `true`, and all three constraints plus all four indexes are present.
+
 Products referenced by historical orders cannot be hard-deleted. Deactivate those products instead. The status state machine allows `Pending Verification -> Processing` or `Cancelled`, `Processing -> Shipped` or `Cancelled`, and `Shipped -> Fulfilled`; `Fulfilled` and `Cancelled` are terminal, and repeated same-status calls are idempotent. Cancellation restores reserved inventory exactly once only before shipment; shipped and fulfilled orders cannot be cancelled through the MVP RPC. Customers remain guests.
 
-Confirm the application is configured for this new project only. It must never point at Botanica production data. There is no `store_id`, tenant system, customer login, subscription, payment gateway, or multi-image gallery in this MVP baseline.
+Confirm the application is configured for this new project only. It must never point at production data.
+
+## Tenant foundation
+
+The migrations now establish the data foundation for multiple merchant stores:
+
+- `public.stores` exists, with one initial store created during migration.
+- `profiles`, `products`, `orders`, and `store_settings` each contain a `store_id` referencing `public.stores`.
+- Existing data is assigned to that one initial store (`slug = 'default-store'`).
+- The UI still operates as one storefront at this stage. Tenant-aware authorization is not implemented until T01B, and store-scoped public routes are not implemented until T02.
+
+There is still no customer login, subscription, payment gateway, or multi-image gallery in this MVP baseline.

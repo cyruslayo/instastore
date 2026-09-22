@@ -1,5 +1,15 @@
+export interface Store {
+  id: string;
+  slug: string;
+  name: string;
+  status: 'active' | 'suspended';
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Product {
   id: string;
+  store_id: string;
   name: string;
   slug: string;
   description?: string;
@@ -40,6 +50,7 @@ export type OrderStatus = 'Pending Verification' | 'Processing' | 'Shipped' | 'F
 
 export interface Order {
   id: string;
+  store_id: string;
   public_code: string;
   customer_name: string;
   customer_phone: string;
@@ -70,6 +81,7 @@ export interface CustomerOrderStatus {
 
 export interface Profile {
   id: string;
+  store_id: string;
   email?: string | null;
   role: 'admin';
   created_at?: string;

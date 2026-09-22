@@ -1,26 +1,55 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# InstaStore
 
-# Botanica
+A storefront and order-management product for Instagram-first merchants.
 
-Premium edibles & essential oils storefront, built with Astro, React islands, Tailwind CSS 4, and Firebase.
+## Stack
+
+- [Astro](https://astro.build) — server-rendered `.astro` pages with React islands
+- React — interactive islands hydrated client-side
+- TypeScript — strict mode
+- Tailwind CSS — design tokens defined in `src/styles/global.css`
+- Supabase — database, admin authentication, and storage
+- Netlify — serverless deployment via `@astrojs/netlify`
+- pnpm — package manager
 
 ## Run Locally
 
-**Prerequisites:** Node.js (>= 22.12.0)
+**Prerequisites:** Node.js 22+ and pnpm.
 
 1. Install dependencies:
-   `pnpm install`
+
+   ```sh
+   pnpm install
+   ```
+
 2. Start the dev server:
-   `pnpm dev`
-3. Build the static site:
-   `pnpm build`
-4. Preview the production build:
-   `pnpm preview`
-5. Type-check the project:
-   `pnpm check`
 
-## Firebase
+   ```sh
+   pnpm dev
+   ```
 
-Firebase (Firestore, Auth, Storage) is initialized in `src/lib/firebase.ts` from `firebase-applet-config.json`. Firestore security rules live in `firestore.rules`.
+3. Type-check the project:
+
+   ```sh
+   pnpm check
+   ```
+
+4. Build for production:
+
+   ```sh
+   pnpm build
+   ```
+
+5. Preview the production build:
+
+   ```sh
+   pnpm preview
+   ```
+
+## Configuration
+
+Copy `.env.example` to `.env` and set `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` to your Supabase project values.
+
+## Database Setup
+
+InstaStore uses Supabase for its database, admin authentication, and storage. See [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md) for the fresh-install steps, including the required Storage buckets and admin account provisioning.

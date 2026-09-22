@@ -443,7 +443,7 @@ export default function ProductFormModal({
                 onChange={handleImageChange}
                 className="block w-full text-sm"
               />
-              <p className="text-[11px] text-on-surface-variant">
+              <p className="text-label-sm text-on-surface-variant">
                 JPEG, PNG, or WebP. Maximum 5 MiB.
               </p>
               {(formData.currentImage || newImage) && (
@@ -477,7 +477,7 @@ export default function ProductFormModal({
                 ))}
               </div>
               {formData.galleryImages.length + newGalleryImages.length < 4 && <input type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={handleGalleryChange} className="block w-full text-sm" />}
-              <p className="text-[11px] text-on-surface-variant">Up to four additional JPEG, PNG, or WebP images (5 MiB each). New images are added at the end.</p>
+              <p className="text-label-sm text-on-surface-variant">Up to four additional JPEG, PNG, or WebP images (5 MiB each). New images are added at the end.</p>
             </div>
             <label className="flex items-center gap-3">
               <input

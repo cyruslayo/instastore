@@ -1,3 +1,5 @@
+"use client";
+
 import { useMemo, useState } from "react";
 import ProductCard from "@/components/storefront/ProductCard";
 import { filterCatalogProducts, type CatalogSort } from "@/lib/catalogDiscovery";

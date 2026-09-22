@@ -12,6 +12,7 @@ interface Props {
   description?: string;
   pathname: string;
   storeSlug: string;
+  primaryColor?: string;
   image?: string;
   siteName?: string;
   type?: 'website' | 'article';
@@ -22,6 +23,7 @@ const {
   description = 'Browse currently available products and order directly from this storefront.',
   pathname,
   storeSlug,
+  primaryColor,
   image,
   siteName = 'Storefront',
   type = 'website'
@@ -29,8 +31,10 @@ const {
 
 const siteUrl = Astro.site ? Astro.site.toString().replace(/\/$/, '') : (Astro.url.origin || 'https://instastore.local');
 const canonicalUrl = new URL(pathname, siteUrl).toString();
-let storefrontColor = DEFAULT_SITE_SETTINGS.primaryColor;
-try { storefrontColor = (await fetchLiveSiteSettings(storeSlug)).primaryColor; } catch { /* Keep safe default. */ }
+let storefrontColor = primaryColor || DEFAULT_SITE_SETTINGS.primaryColor;
+if (!primaryColor) {
+  try { storefrontColor = (await fetchLiveSiteSettings(storeSlug)).primaryColor; } catch { /* Keep safe default. */ }
+}
 const hex = /^#[0-9a-fA-F]{6}$/.test(storefrontColor) ? storefrontColor : '#18231a';
 const onColor = getStoreOnPrimary(hex);
 const brandStyle = `--store-primary:${hex.toLowerCase()};--store-on-primary:${onColor}`;

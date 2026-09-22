@@ -310,7 +310,7 @@ function AssetField({ label, value, removed, file, onFile, onRemove, onUndoRemov
     {value && !removed && <img src={value} alt={`${label} preview`} referrerPolicy="no-referrer" className="max-h-32 max-w-56 rounded-xl border border-outline-variant object-contain" />}
     {file && <p className="text-xs text-on-surface-variant">Selected: {file.name}</p>}
     <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => onFile(event.target.files?.[0] || null)} className={`${inputClass} file:mr-3 file:rounded-lg file:border-0 file:bg-surface-container file:px-3 file:py-1`} />
-    <p className="text-[11px] text-on-surface-variant">JPEG, PNG, or WebP. Maximum 5 MiB.</p>
+    <p className="text-label-sm text-on-surface-variant">JPEG, PNG, or WebP. Maximum 5 MiB.</p>
     {removed ? <button type="button" onClick={onUndoRemove} className="text-xs text-secondary underline">Keep existing {label.toLowerCase()}</button> : value && <button type="button" onClick={onRemove} className="text-xs text-error underline">Remove {label.toLowerCase()}</button>}
   </div>;
 }

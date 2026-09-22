@@ -29,19 +29,16 @@ export default function AdminProducts() {
         .eq("id", productToDelete.id);
       if (error) throw error;
       setProducts(products.filter((p) => p.id !== productToDelete.id));
-      const imageUrl = productToDelete.image;
+      const imageUrls = [productToDelete.image, ...(productToDelete.gallery_images || [])].filter((url): url is string => Boolean(url));
       setProductToDelete(null);
-      if (imageUrl) {
-        try {
-          await deleteManagedProductImage(imageUrl);
-        } catch (cleanupError) {
-          console.warn(
-            "Product deleted, but its managed image could not be cleaned up.",
-            cleanupError,
-          );
-          setError("Product deleted, but its image cleanup failed.");
+      let cleanupFailed = false;
+      for (const imageUrl of imageUrls) {
+        try { await deleteManagedProductImage(imageUrl); } catch (cleanupError) {
+          cleanupFailed = true;
+          console.warn("Product deleted, but a managed image could not be cleaned up.", cleanupError);
         }
       }
+      if (cleanupFailed) setError("Product deleted, but one or more image cleanups failed.");
     } catch (error) {
       console.error("Error deleting product: ", error);
       setError("The product could not be deleted from Supabase.");

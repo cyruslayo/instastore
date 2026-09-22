@@ -92,7 +92,14 @@ export async function deleteManagedProductImage(
     /^products\/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\/[A-Za-z0-9-]{32,36}\.(jpg|jpeg|png|webp)$/.test(
       objectPath,
     );
-  if (!isLegacyPath && !isStoreScopedPath) return false;
+  const profile = await getCurrentAdminProfile();
+  const ownsStoreScopedPath = isStoreScopedPath &&
+    objectPath.split("/")[1]?.toLowerCase() === profile?.store_id.toLowerCase();
+  const { data: defaultStore } = isLegacyPath
+    ? await getSupabase().from("stores").select("id").eq("slug", "default-store").maybeSingle()
+    : { data: null };
+  const ownsLegacyPath = isLegacyPath && profile?.store_id === defaultStore?.id;
+  if (!ownsLegacyPath && !ownsStoreScopedPath) return false;
   if (
     objectPath.split("/").some((segment) => segment === ".." || segment === ".")
   )

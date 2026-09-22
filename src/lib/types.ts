@@ -14,6 +14,8 @@ export interface Product {
   slug: string;
   description?: string;
   price: number;
+  compare_at_price?: number | null;
+  gallery_images: string[];
   inventory: number;
   category: string;
   image?: string;

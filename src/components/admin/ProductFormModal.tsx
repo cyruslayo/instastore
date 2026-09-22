@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import type { Product } from "@/lib/types";
 import {
@@ -19,6 +19,7 @@ interface ProductFormData {
   slug: string;
   description: string;
   price: number;
+  compareAtPrice: string;
   inventory: number;
   category: string;
   sku: string;
@@ -26,12 +27,14 @@ interface ProductFormData {
   is_active: boolean;
   currentImage: string;
   removeImage: boolean;
+  galleryImages: string[];
 }
 const emptyForm = (category: string): ProductFormData => ({
   name: "",
   slug: "",
   description: "",
   price: 0,
+  compareAtPrice: "",
   inventory: 0,
   category,
   sku: "",
@@ -39,6 +42,7 @@ const emptyForm = (category: string): ProductFormData => ({
   is_active: true,
   currentImage: "",
   removeImage: false,
+  galleryImages: [],
 });
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
@@ -54,6 +58,9 @@ export default function ProductFormModal({
     emptyForm(defaultCategory),
   );
   const [newImage, setNewImage] = useState<File | null>(null);
+  const [newGalleryImages, setNewGalleryImages] = useState<File[]>([]);
+  const [galleryPreviewUrls, setGalleryPreviewUrls] = useState<string[]>([]);
+  const galleryPreviewRef = useRef<string[]>([]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -67,6 +74,10 @@ export default function ProductFormModal({
   useEffect(() => {
     revokePreview();
     setNewImage(null);
+    galleryPreviewRef.current.forEach((url) => URL.revokeObjectURL(url));
+    galleryPreviewRef.current = [];
+    setNewGalleryImages([]);
+    setGalleryPreviewUrls([]);
     setFormData(
       product
         ? {
@@ -74,6 +85,7 @@ export default function ProductFormModal({
             slug: product.slug,
             description: product.description || "",
             price: product.price,
+            compareAtPrice: product.compare_at_price == null ? "" : String(product.compare_at_price),
             inventory: product.inventory,
             category: product.category || defaultCategory,
             sku: product.sku || "",
@@ -81,6 +93,7 @@ export default function ProductFormModal({
             is_active: product.is_active,
             currentImage: product.image || "",
             removeImage: false,
+            galleryImages: product.gallery_images || [],
           }
         : emptyForm(defaultCategory),
     );
@@ -93,6 +106,7 @@ export default function ProductFormModal({
   useEffect(
     () => () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
+      galleryPreviewRef.current.forEach((url) => URL.revokeObjectURL(url));
     },
     [previewUrl],
   );
@@ -144,6 +158,25 @@ export default function ProductFormModal({
     setField("removeImage", false);
     setError(null);
   };
+  const handleGalleryChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = "";
+    if (!files.length) return;
+    if (formData.galleryImages.length + newGalleryImages.length + files.length > 4) {
+      setError("A product can have up to four gallery images.");
+      return;
+    }
+    const invalid = files.find((file) => !IMAGE_TYPES.includes(file.type) || file.size > 5_242_880);
+    if (invalid) {
+      setError(invalid.size > 5_242_880 ? "Each image must be no larger than 5 MiB." : "Product images must be JPEG, PNG, or WebP.");
+      return;
+    }
+    const createdUrls = files.map((file) => URL.createObjectURL(file));
+    galleryPreviewRef.current.push(...createdUrls);
+    setNewGalleryImages((current) => [...current, ...files]);
+    setGalleryPreviewUrls((current) => [...current, ...createdUrls]);
+    setError(null);
+  };
   const save = async () => {
     setError(null);
     const category = isAddingNewCategory
@@ -161,14 +194,23 @@ export default function ProductFormModal({
       setError("Price must be a non-negative number.");
       return;
     }
+    const compareAtPrice = formData.compareAtPrice.trim() === "" ? null : Number(formData.compareAtPrice);
+    if (compareAtPrice !== null && (!Number.isFinite(compareAtPrice) || compareAtPrice <= formData.price || compareAtPrice < 0)) {
+      setError("Compare-at price must be greater than the current price.");
+      return;
+    }
     if (!Number.isInteger(formData.inventory) || formData.inventory < 0) {
       setError("Inventory must be a whole number of 0 or greater.");
       return;
     }
     setIsSaving(true);
     let uploadedImage: string | null = null;
+    const uploadedGalleryImages: string[] = [];
+    let savedSuccessfully = false;
     try {
       if (newImage) uploadedImage = await uploadProductImage(newImage);
+      for (const imageFile of newGalleryImages) uploadedGalleryImages.push(await uploadProductImage(imageFile));
+      const galleryImages = [...formData.galleryImages, ...uploadedGalleryImages];
       const image =
         uploadedImage ||
         (formData.removeImage ? null : formData.currentImage || null);
@@ -177,6 +219,8 @@ export default function ProductFormModal({
         slug: formData.slug.trim(),
         description: formData.description,
         price: formData.price,
+        compare_at_price: compareAtPrice,
+        gallery_images: galleryImages,
         inventory: formData.inventory,
         category,
         image,
@@ -199,12 +243,20 @@ export default function ProductFormModal({
           .insert({ ...payload, store_id: profile.store_id });
       }
       if (result.error) throw result.error;
+      savedSuccessfully = true;
+      const retained = new Set([image, ...galleryImages].filter((url): url is string => Boolean(url)));
+      const removedImages = [product?.image, ...(product?.gallery_images || [])].filter((url): url is string => Boolean(url)).filter((url) => !retained.has(url));
+      let cleanupFailed = false;
+      for (const removedUrl of removedImages) {
+        try { await deleteManagedProductImage(removedUrl); } catch (cleanupError) { cleanupFailed = true; console.warn("Saved product, but an old managed image could not be cleaned up.", cleanupError); }
+      }
       onSaved();
       onClose();
+      if (cleanupFailed) window.alert("Product saved, but one or more removed images could not be cleaned up.");
     } catch (cause) {
-      if (uploadedImage) {
+      if (!savedSuccessfully) for (const newUrl of [uploadedImage, ...uploadedGalleryImages].filter((url): url is string => Boolean(url))) {
         try {
-          await deleteManagedProductImage(uploadedImage);
+          await deleteManagedProductImage(newUrl);
         } catch (cleanupError) {
           console.warn(
             "Unable to clean up uncommitted product image",
@@ -289,6 +341,15 @@ export default function ProductFormModal({
               value={String(formData.price)}
               onChange={(e) => setField("price", Number(e.target.value))}
               required
+            />
+            <Field
+              label="Compare-at price (optional)"
+              name="compare-at-price"
+              type="number"
+              min="0"
+              step="0.01"
+              value={formData.compareAtPrice}
+              onChange={(e) => setField("compareAtPrice", e.target.value)}
             />
             <Field
               label="Inventory Count"
@@ -398,6 +459,25 @@ export default function ProductFormModal({
                   Remove current image
                 </button>
               )}
+            </div>
+            <div className="sm:col-span-2 space-y-3">
+              <span className="font-label-md text-label-md text-on-surface-variant block">Gallery images ({formData.galleryImages.length + newGalleryImages.length}/4)</span>
+              <div className="flex flex-wrap gap-3">
+                {formData.galleryImages.map((url, index) => (
+                  <div key={`${url}-${index}`} className="relative h-24 w-24 overflow-hidden rounded-xl bg-surface-container">
+                    <img src={url} alt={`${formData.name || "Product"} gallery ${index + 1}`} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+                    <button type="button" aria-label={`Remove gallery image ${index + 1}`} onClick={() => setField("galleryImages", formData.galleryImages.filter((_, imageIndex) => imageIndex !== index))} className="absolute right-1 top-1 rounded-full bg-surface px-2 py-1 text-xs text-error">Remove</button>
+                  </div>
+                ))}
+                {galleryPreviewUrls.map((url, index) => (
+                  <div key={url} className="relative h-24 w-24 overflow-hidden rounded-xl bg-surface-container">
+                    <img src={url} alt={`${formData.name || "Product"} new gallery ${index + 1}`} className="h-full w-full object-cover" />
+                    <button type="button" aria-label={`Remove new gallery image ${index + 1}`} onClick={() => { URL.revokeObjectURL(url); galleryPreviewRef.current = galleryPreviewRef.current.filter((item) => item !== url); setGalleryPreviewUrls((current) => current.filter((_, i) => i !== index)); setNewGalleryImages((current) => current.filter((_, i) => i !== index)); }} className="absolute right-1 top-1 rounded-full bg-surface px-2 py-1 text-xs text-error">Remove</button>
+                  </div>
+                ))}
+              </div>
+              {formData.galleryImages.length + newGalleryImages.length < 4 && <input type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={handleGalleryChange} className="block w-full text-sm" />}
+              <p className="text-[11px] text-on-surface-variant">Up to four additional JPEG, PNG, or WebP images (5 MiB each). New images are added at the end.</p>
             </div>
             <label className="flex items-center gap-3">
               <input

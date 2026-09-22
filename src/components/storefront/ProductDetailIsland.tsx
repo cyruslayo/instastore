@@ -10,6 +10,9 @@ export default function ProductDetailIsland({ product, storeSlug }: { product: P
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [addedNotice, setAddedNotice] = useState(false);
   const available = product.inventory > 0 && product.is_active;
+  const images = [...new Set([product.image, ...(product.gallery_images || [])].filter((image): image is string => Boolean(image?.trim())))];
+  const [currentImage, setCurrentImage] = useState(images[0] || "");
+  const salePrice = product.compare_at_price != null && product.compare_at_price > product.price;
 
   const handleAddToCart = () => {
     if (!available) return;
@@ -18,7 +21,7 @@ export default function ProductDetailIsland({ product, storeSlug }: { product: P
       name: product.name,
       price: product.price,
       quantity,
-      image: product.image || "",
+      image: currentImage,
       category: product.category,
       sku: product.sku,
       inventory: product.inventory,
@@ -31,16 +34,17 @@ export default function ProductDetailIsland({ product, storeSlug }: { product: P
     <main className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-stack-lg md:py-section-gap pb-32 pt-24 md:pt-32">
       <div className="grid grid-cols-1 md:grid-cols-12 gap-gutter lg:gap-section-gap">
         <div className="md:col-span-7 space-y-stack-md">
-          <div className="aspect-[4/5] bg-surface-container-low rounded-xl overflow-hidden relative group botanical-shadow">
-            {product.image ? <img src={product.image} alt={product.name} referrerPolicy="no-referrer" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-in-out group-hover:scale-105" /> : <div className="w-full h-full flex items-center justify-center bg-surface-container-highest text-on-surface-variant">No Image</div>}
+          <div className="aspect-[4/5] bg-surface-container-low rounded-xl overflow-hidden relative botanical-shadow">
+            {currentImage ? <img src={currentImage} alt={product.name} referrerPolicy="no-referrer" className="absolute inset-0 h-full w-full object-contain" /> : <div className="w-full h-full flex items-center justify-center bg-surface-container-highest text-on-surface-variant">No image available</div>}
           </div>
+          {images.length > 1 && <div className="flex gap-3 overflow-x-auto pb-1" aria-label="Product images">{images.map((image, index) => <button key={image} type="button" onClick={() => setCurrentImage(image)} aria-label={`Show product image ${index + 1}`} aria-pressed={currentImage === image} className={`h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 ${currentImage === image ? "border-store-primary" : "border-transparent"}`}><img src={image} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" /></button>)}</div>}
         </div>
 
         <div className="md:col-span-5 flex flex-col">
           <div className="mb-stack-lg">
             <span className="font-label-sm text-label-sm uppercase tracking-widest text-on-surface-variant">{product.category}</span>
             <h1 className="font-display-sm md:font-display-md text-display-sm md:text-display-md text-primary mb-stack-sm mt-2">{product.name}</h1>
-            <p className="font-body-lg text-body-lg text-secondary mb-stack-md">{formatNaira(product.price)}</p>
+            <div className="mb-stack-md flex flex-wrap items-center gap-3"><p className="font-body-lg text-body-lg font-semibold text-primary">{formatNaira(product.price)}</p>{salePrice && <><span className="text-body-md text-on-surface-variant line-through">{formatNaira(product.compare_at_price!)}</span><span className="rounded-full bg-store-primary px-3 py-1 text-xs font-bold text-store-on-primary">Sale</span></>}</div>
             <ProductDescription description={product.description || "Product details are managed by the storefront."} />
           </div>
 
@@ -51,7 +55,7 @@ export default function ProductDetailIsland({ product, storeSlug }: { product: P
                 <span className="w-12 text-center font-label-lg text-label-lg text-on-surface" aria-live="polite">{quantity}</span>
                 <button type="button" disabled={!available || quantity >= product.inventory} onClick={() => setQuantity(Math.min(product.inventory, quantity + 1))} aria-label="Increase quantity" className="touch-target w-10 h-10 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors rounded-full hover:bg-surface-container disabled:opacity-40"><PlusIcon /></button>
               </div>
-              <button type="button" disabled={!available} onClick={handleAddToCart} className="flex-1 bg-primary text-on-primary rounded-full font-label-lg text-label-lg flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><BagIcon />{available ? "Add to Bag" : "Sold Out"}</button>
+              <button type="button" disabled={!available} onClick={handleAddToCart} className="flex-1 bg-store-primary text-store-on-primary rounded-full font-label-lg text-label-lg flex items-center justify-center gap-2 hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><BagIcon />{available ? "Add to Bag" : "Sold Out"}</button>
             </div>
             {!available && <p className="font-body-sm text-body-sm text-error">Currently unavailable.</p>}
             {addedNotice && <p className="font-body-sm text-body-sm text-secondary flex items-center gap-1.5 animate-in fade-in"><CheckIcon /> Added to your bag.</p>}

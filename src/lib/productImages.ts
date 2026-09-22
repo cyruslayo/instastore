@@ -1,4 +1,5 @@
 import { getSupabase } from "@/lib/supabase";
+import { getCurrentAdminProfile } from "@/lib/auth";
 
 const BUCKET = "product-images";
 const MAX_FILE_SIZE = 5_242_880;
@@ -41,7 +42,10 @@ function validateFile(file: File): ProductImageMime {
 
 export async function uploadProductImage(file: File): Promise<string> {
   const mime = validateFile(file);
-  const path = `products/${createSecureId()}.${MIME_EXTENSIONS[mime]}`;
+  const profile = await getCurrentAdminProfile();
+  if (!profile)
+    throw new Error("No active merchant store is associated with this account.");
+  const path = `products/${profile.store_id}/${createSecureId()}.${MIME_EXTENSIONS[mime]}`;
   const { error } = await getSupabase()
     .storage.from(BUCKET)
     .upload(path, file, {
@@ -83,8 +87,12 @@ export async function deleteManagedProductImage(
   } catch {
     return false;
   }
-  if (!/^products\/[A-Za-z0-9-]{20,64}\.(jpg|jpeg|png|webp)$/.test(objectPath))
-    return false;
+  const isLegacyPath = /^products\/[A-Za-z0-9-]{20,64}\.(jpg|jpeg|png|webp)$/.test(objectPath);
+  const isStoreScopedPath =
+    /^products\/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\/[A-Za-z0-9-]{32,36}\.(jpg|jpeg|png|webp)$/.test(
+      objectPath,
+    );
+  if (!isLegacyPath && !isStoreScopedPath) return false;
   if (
     objectPath.split("/").some((segment) => segment === ".." || segment === ".")
   )

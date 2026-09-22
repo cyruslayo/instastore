@@ -10,9 +10,9 @@ and independently reviewable.
 | Complete | T00  | Repository baseline               |
 | Complete | T00B | Cloudflare hosting migration      |
 | Complete | T01A | Tenant data foundation            |
-| Next     | T01B | Tenant security and commerce RPCs |
-| Pending  | T01C | Tenant-aware admin and storage    |
-| Pending  | T02  | Store-scoped storefront           |
+| Complete | T01B | Tenant security and commerce RPCs |
+| Complete | T01C | Tenant-aware admin and storage    |
+| Next     | T02  | Store-scoped storefront           |
 | Pending  | T03  | Abuja and Lagos delivery zones    |
 | Pending  | T04  | Product merchandising             |
 | Pending  | T05  | Search and catalog discovery      |

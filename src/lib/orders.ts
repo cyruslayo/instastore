@@ -41,6 +41,17 @@ function secureRandomId(): string {
   throw new Error("Secure receipt upload is unavailable in this browser.");
 }
 
+// Client-side sanity check only. The database remains authoritative: order
+// creation re-resolves the store and validates the receipt namespace.
+const STORE_SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+function validateStoreSlug(slug: string): string {
+  const normalized = String(slug ?? "").trim().toLowerCase();
+  if (!STORE_SLUG_PATTERN.test(normalized))
+    throw new Error("Invalid store slug.");
+  return normalized;
+}
+
 export async function createStoreOrder(payload: {
   customerName: string;
   customerPhone: string;
@@ -49,7 +60,9 @@ export async function createStoreOrder(payload: {
   total: number;
   shippingAddress: ShippingAddress;
   receiptPath: string;
+  storeSlug?: string;
 }): Promise<string> {
+  const storeSlug = validateStoreSlug(payload.storeSlug ?? "default-store");
   const rpcPayload = {
     p_customer_name: payload.customerName,
     p_customer_phone: payload.customerPhone,
@@ -58,6 +71,7 @@ export async function createStoreOrder(payload: {
     p_total: payload.total,
     p_shipping_address: payload.shippingAddress,
     p_receipt_path: payload.receiptPath,
+    p_store_slug: storeSlug,
   };
   let lastError: unknown;
   for (let attempt = 1; attempt <= 3; attempt += 1) {
@@ -99,9 +113,13 @@ export async function setOrderStatus(
   return data;
 }
 
-export async function uploadReceipt(file: File): Promise<string> {
+export async function uploadReceipt(
+  file: File,
+  storeSlug = "default-store",
+): Promise<string> {
   if (!RECEIPT_MIME_TYPES.has(file.type))
     throw new Error("Receipt must be a JPEG, PNG, or PDF file.");
+  const slug = validateStoreSlug(storeSlug);
   const extensionMatch = file.name.match(/\.([a-z0-9]{1,5})$/i);
   let extension = ".jpg";
   if (
@@ -117,7 +135,7 @@ export async function uploadReceipt(file: File): Promise<string> {
   const supabase = getSupabase();
   let lastError: unknown;
   for (let attempt = 1; attempt <= 3; attempt += 1) {
-    const path = `receipts/${secureRandomId()}${extension}`;
+    const path = `receipts/${slug}/${secureRandomId()}${extension}`;
     try {
       const { error } = await supabase.storage
         .from("receipts")

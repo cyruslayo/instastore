@@ -132,7 +132,7 @@ export default function Checkout() {
     try {
       let uploadedPath = receiptPath;
       if (!uploadedPath && receiptFile) {
-        uploadedPath = await uploadReceipt(receiptFile);
+        uploadedPath = await uploadReceipt(receiptFile, "default-store");
         setReceiptPath(uploadedPath);
       }
       if (!uploadedPath)
@@ -159,6 +159,7 @@ export default function Checkout() {
           landmark: form.landmark.trim() || undefined,
         },
         receiptPath: uploadedPath,
+        storeSlug: "default-store",
       });
       setTrackingCode(code);
       clearCart();

@@ -47,11 +47,19 @@ InstaStore — a storefront and order-management product for Instagram-first mer
 - `/admin/content` — store settings (store name, tagline, logo, Instagram/WhatsApp, bank details, delivery fee, announcement).
 
 ## Data Model (Supabase tables)
-- `profiles`: `id` (references `auth.users`), `email`, `role` (admin only), `created_at`, `updated_at`.
-- `products`: `id`, `name`, `slug`, `description`, `price`, `inventory`, `category`, `image`, `sku`, `featured`, `is_active`, `created_at`, `updated_at`.
-- `store_settings`: singleton (`id = true`) holding store branding, currency (`NGN`), `delivery_fee`, bank details, and announcement.
-- `orders`: `id`, `public_code`, `customer_name`, `customer_phone`, `customer_instagram`, `items` (jsonb), `subtotal`, `shipping_fee`, `total`, `status`, `shipping_address` (jsonb), `receipt_path`, `inventory_restocked`, `created_at`, `updated_at`.
-- Admin users are Supabase Auth users with a matching `profiles` row whose `role = 'admin'`.
+- `stores`: `id`, `slug` (unique), `name`, `status` (`active` | `suspended`), `created_at`, `updated_at`.
+- `profiles`: `id` (references `auth.users`), `email`, `role` (admin only), `store_id` (references `stores`), `created_at`, `updated_at`.
+- `products`: `id`, `store_id`, `name`, `slug`, `description`, `price`, `inventory`, `category`, `image`, `sku`, `featured`, `is_active`, `created_at`, `updated_at`.
+- `store_settings`: one row per store, primary key `store_id`, holding store branding, currency (`NGN`), `delivery_fee`, bank details, and announcement.
+- `orders`: `id`, `store_id`, `public_code`, `customer_name`, `customer_phone`, `customer_instagram`, `items` (jsonb), `subtotal`, `shipping_fee`, `total`, `status`, `shipping_address` (jsonb), `receipt_path`, `inventory_restocked`, `created_at`, `updated_at`.
+- Each merchant (profile) belongs to exactly one store. Admin users are Supabase Auth users with a matching `profiles` row whose `role = 'admin'` and whose store is `active`.
+
+## Tenant Security Model
+- A merchant's store identity is derived from the session, never from client input. The `public.current_store_id()` SECURITY DEFINER helper returns the caller's active store UUID (null for anon, non-admin, or suspended stores); `public.current_store_slug()` returns its slug.
+- Row-level security is the enforcement boundary. `products`, `orders`, and `store_settings` are all scoped to `store_id = public.current_store_id()` for authenticated merchants; `profiles` is limited to the caller's own row; `stores` is limited to the caller's own store.
+- Anonymous users may read only active products belonging to `default-store` (the sole live public storefront until T02) and resolve storefront settings through `get_storefront_settings()`.
+- Product creation sets `store_id` from the authenticated profile; the form never accepts a store_id. Orders are inserted by `create_store_order()` and never written directly by the browser.
+- Manual merchant provisioning: create a `stores` row, create its `store_settings` row (keyed by `store_id`), and set the merchant's `profiles.store_id`. There is no self-signup, store switching, or super-admin.
 
 ## Order State Machine
 - Statuses: `Pending Verification`, `Processing`, `Shipped`, `Fulfilled`, `Cancelled`.
@@ -63,19 +71,20 @@ InstaStore — a storefront and order-management product for Instagram-first mer
 - Cancellation restores reserved inventory exactly once (`inventory_restocked`) and only before shipment.
 
 ## Storage
-- Receipts: private `receipts` bucket (5 MiB; JPEG/PNG/PDF). Anonymous/authenticated users upload to `receipts/<uuid>.<ext>`; only admins can read. Handled by `uploadReceipt` in `src/lib/orders.ts`.
-- Product images: public `product-images` bucket (5 MiB; JPEG/PNG/WebP). Admin-only upload/delete via `src/lib/productImages.ts`; public URLs serve storefront images.
+- Receipts: private `receipts` bucket (5 MiB; JPEG/PNG/PDF). New uploads go to `receipts/<store-slug>/<random-id>.<ext>`; historical `receipts/<random-id>.<ext>` paths remain readable by the default-store merchant only. Only admins can read. Handled by `uploadReceipt` in `src/lib/orders.ts`.
+- Product images: public `product-images` bucket (5 MiB; JPEG/PNG/WebP). New uploads go to `products/<store-id>/<random-id>.<ext>`; historical `products/<random-id>.<ext>` paths remain and are deletable only by the default-store merchant. Admin-only upload/delete via `src/lib/productImages.ts`; public URLs serve storefront images.
 
 ## Commerce Transaction Rules
 - Orders are created through the `create_store_order` RPC, which trusts the server, not the client:
+  - Resolves the requested store by slug (default `default-store`); rejects unknown or suspended stores.
   - Requires a customer name, a valid phone (≥ 7 digits), a non-empty shipping address, and at least one item.
   - Rejects duplicate products in a single order.
-  - Requires the uploaded receipt to already exist in the `receipts` bucket.
+  - Requires the uploaded receipt to already exist in the `receipts` bucket and to belong to the requested store's namespace.
   - Recalculates the subtotal from current product prices and rejects a mismatched client total.
   - Decrements inventory under row locks and rejects orders that exceed stock.
   - Is idempotent per receipt (same receipt + same phone returns the existing tracking code).
 - Products referenced by any order cannot be hard-deleted; deactivate them instead.
-- Status changes go through the `set_order_status` RPC (admin only).
+- Status changes go through the `set_order_status` RPC (admin only) and are scoped to the caller's store.
 - Order tracking uses the `get_order_status` RPC keyed on `public_code` + normalized phone.
 
 ## Design System

@@ -39,8 +39,8 @@ keeps navigation inside the store, and passes `storeSlug` explicitly. Unknown or
 suspended stores render a "Store unavailable" result (HTTP 404) and never fall
 back to `default-store`.
 
-- `/s/<store>` — storefront home: store branding plus a subset of active products.
-- `/s/<store>/shop` — full active product catalog.
+- `/s/<store>` — storefront home: store branding plus up to four featured products, falling back to newest active products.
+- `/s/<store>/shop` — full active product catalog with browser-side search (name/category/description), category and in-stock filters, and newest/price sorting.
 - `/s/<store>/product/<slug>` — product detail (redirects to that store's `/shop` when not found).
 - `/s/<store>/cart` — client-side cart for that store.
 - `/s/<store>/checkout` — guest checkout: delivery details + delivery zone + bank transfer + receipt upload.
@@ -61,16 +61,16 @@ There is intentionally no InstaStore marketing homepage.
 
 ## Admin Routes
 - `/admin` — dashboard with live metrics (order value, total orders, active products, recent orders).
-- `/admin/products` — product CRUD (name, slug, description, price, inventory, category, image, SKU, featured, active).
+- `/admin/products` — product CRUD (name, slug, description, price, optional compare-at price, inventory, category, primary image, up to four ordered gallery images, SKU, featured, active).
 - `/admin/orders` — order list and status updates; order details show the delivery snapshot when present.
 - `/admin/delivery` — merchant delivery zones (Abuja/Lagos): view, add, edit, activate/deactivate, delete.
-- `/admin/content` — store settings (store name, tagline, logo, Instagram/WhatsApp, bank details, currency, announcement). The flat delivery fee input has been removed; delivery pricing lives under `/admin/delivery`.
+- `/admin/content` — store settings (store name, tagline, description, managed logo and hero image, primary brand color, Instagram/WhatsApp, bank details, currency, announcement). The flat delivery fee input has been removed; delivery pricing lives under `/admin/delivery`.
 
 ## Data Model (Supabase tables)
 - `stores`: `id`, `slug` (unique), `name`, `status` (`active` | `suspended`), `created_at`, `updated_at`.
 - `profiles`: `id` (references `auth.users`), `email`, `role` (admin only), `store_id` (references `stores`), `created_at`, `updated_at`.
-- `products`: `id`, `store_id`, `name`, `slug`, `description`, `price`, `inventory`, `category`, `image`, `sku`, `featured`, `is_active`, `created_at`, `updated_at`. Product slugs are unique per store (`unique (store_id, slug)`), so two merchants may use the same slug.
-- `store_settings`: one row per store, primary key `store_id`, holding store branding, currency (`NGN`), bank details, and announcement. `delivery_fee` is deprecated (kept for now, no longer read by checkout).
+- `products`: `id`, `store_id`, `name`, `slug`, `description`, `price`, nullable presentation-only `compare_at_price` (must exceed `price`), `inventory`, `category`, primary `image`, up to four ordered `gallery_images`, `sku`, `featured`, `is_active`, `created_at`, `updated_at`. Product slugs are unique per store (`unique (store_id, slug)`), so two merchants may use the same slug. Checkout trusts `price`, never `compare_at_price`.
+- `store_settings`: one row per store, primary key `store_id`, holding store name, tagline, description, logo URL, hero image URL, six-digit hex primary brand color, currency (`NGN`), bank details, and announcement. `delivery_fee` is deprecated (kept for now, no longer read by checkout).
 - `delivery_zones`: `id`, `store_id` (references `stores`, cascade delete), `city` (`Abuja` | `Lagos`), `name`, `provider`, `fee`, `estimate`, `note`, `is_active`, `sort_order`, `created_at`, `updated_at`; unique on `(store_id, city, lower(btrim(name)))`, so a merchant may reuse a zone name across cities. Public and merchant zone lists order by `city`, then `sort_order`, then `name`.
 - `orders`: `id`, `store_id`, `public_code`, `customer_name`, `customer_phone`, `customer_instagram`, `items` (jsonb), `subtotal`, `shipping_fee`, `total`, `status`, `shipping_address` (jsonb), `receipt_path`, `inventory_restocked`, `delivery_zone_id` (references `delivery_zones` `on delete set null`), `delivery_city`, `delivery_zone_name`, `delivery_provider`, `delivery_estimate`, `created_at`, `updated_at`. Historical orders keep the delivery snapshot columns null.
 - Each merchant (profile) belongs to exactly one store. Admin users are Supabase Auth users with a matching `profiles` row whose `role = 'admin'` and whose store is `active`.
@@ -93,7 +93,7 @@ There is intentionally no InstaStore marketing homepage.
 
 ## Storage
 - Receipts: private `receipts` bucket (5 MiB; JPEG/PNG/PDF). New uploads go to `receipts/<store-slug>/<random-id>.<ext>` and the slug must belong to an active store — unknown or suspended store namespaces are rejected by the storage policy. Historical `receipts/<random-id>.<ext>` paths remain readable by the default-store merchant only. Only admins can read. Handled by `uploadReceipt` in `src/lib/orders.ts`.
-- Product images: public `product-images` bucket (5 MiB; JPEG/PNG/WebP). New uploads go to `products/<store-id>/<random-id>.<ext>`; historical `products/<random-id>.<ext>` paths remain and are deletable only by the default-store merchant. Admin-only upload/delete via `src/lib/productImages.ts`; public URLs serve storefront images.
+- Product images: public `product-images` bucket (5 MiB; JPEG/PNG/WebP). New uploads go to `products/<store-id>/<random-id>.<ext>`; historical `products/<random-id>.<ext>` paths remain and are deletable only by the default-store merchant. Store logos and hero images use `stores/<store-id>/logo/<random-id>.<ext>` and `stores/<store-id>/hero/<random-id>.<ext>`. Admin-only upload/delete via `src/lib/productImages.ts` and `src/lib/storeAssets.ts`; public URLs serve storefront images.
 
 ## Commerce Transaction Rules
 - Orders are created through the `create_store_order` RPC, which trusts the server, not the client:

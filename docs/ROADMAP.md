@@ -14,10 +14,10 @@ and independently reviewable.
 | Complete | T01C | Tenant-aware admin and storage    |
 | Complete | T02  | Store-scoped storefront           |
 | Complete | T03  | Abuja and Lagos delivery zones    |
-| Next     | T04  | Product merchandising             |
-| Pending  | T05  | Search and catalog discovery      |
-| Pending  | T06  | Store branding                    |
-| Pending  | T07  | Merchant operations               |
+| Complete | T04  | Product merchandising             |
+| Complete | T05  | Search and catalog discovery      |
+| Complete | T06  | Store branding                    |
+| Next     | T07  | Merchant operations               |
 | Pending  | T08  | Measurement foundation            |
 | Pending  | T09  | Launch hardening                  |
 | Pending  | T10  | First merchant cohort             |

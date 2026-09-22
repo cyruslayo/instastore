@@ -61,6 +61,8 @@ Copy `.env.example` to `.env` and set `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE
 
 Each merchant storefront is reachable at `/s/<store-slug>` (for example `/s/default-store`), with `/s/<store-slug>/shop`, `/s/<store-slug>/product/<slug>`, `/s/<store-slug>/cart`, `/s/<store-slug>/checkout`, and `/s/<store-slug>/track`. Legacy customer URLs (`/`, `/shop`, `/cart`, `/checkout`, `/track`, `/product/<slug>`, `/oils`) redirect to the matching `default-store` route and preserve query parameters.
 
+Store catalogs include browser-side search across product names, categories, and descriptions, with category and in-stock filters plus newest/price sorting. Products support a presentation-only compare-at price and up to four additional gallery images. Merchants can customize their storefront description, logo, hero image, and primary brand color in Store Settings.
+
 ## Database Setup
 
 InstaStore uses Supabase for its database, admin authentication, and storage. See [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md) for the fresh-install steps, including the required Storage buckets and admin account provisioning.

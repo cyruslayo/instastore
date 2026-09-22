@@ -18,8 +18,9 @@ InstaStore is a storefront and order-management product for Instagram-first merc
 
 - Product management.
 - Inventory management.
-- Primary product image plus gallery images.
-- Basic sale pricing.
+- Primary product image plus up to four ordered gallery images.
+- Basic sale pricing using presentation-only compare-at prices.
+- Browser-side catalog search across names, categories, and descriptions, with category/in-stock filters and newest/price sorting.
 
 ### Customers and delivery
 
@@ -37,7 +38,7 @@ InstaStore is a storefront and order-management product for Instagram-first merc
 
 ### Storefront and branding
 
-- Store branding.
+- Store branding: name, tagline, description, logo, hero image, and primary brand color.
 - Consent.
 - Attribution.
 

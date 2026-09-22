@@ -29,6 +29,8 @@ This is the fresh-install path for a **new, empty Supabase project**. Never run 
    - `0010_storefront_tenancy_and_delivery_zones.sql`
    - `0011_trusted_delivery_checkout.sql`
    - `0012_delivery_zone_ordering.sql`
+   - `0013_product_merchandising.sql`
+   - `0014_store_branding.sql`
 7. Create the first user in Supabase Auth (email/password or the configured Auth provider).
 8. Copy the Auth user's UUID and insert the matching admin profile for the existing `default-store` in the SQL editor:
 
@@ -87,15 +89,14 @@ Checkout requires an active delivery zone for the selected city and rejects orde
 
 ## Deployment sequence for the delivery contract change
 
-`0011` changes the checkout contract, so apply the migrations before deploying the updated application:
+The delivery-contract rollout originally listed `0010` and `0011` but omitted `0012`. Apply the complete ordered chain through `0012` before deploying the matching delivery code. For a fresh rollout including B3, apply `0010` through `0014` in order before deploying:
 
 1. `pnpm check`
 2. `pnpm build`
-3. Apply migration `0010_storefront_tenancy_and_delivery_zones.sql`
-4. Apply migration `0011_trusted_delivery_checkout.sql`
-5. Configure real delivery zones for `default-store`
-6. Deploy the application
-7. Test `default-store` checkout
+3. Apply migrations `0010_storefront_tenancy_and_delivery_zones.sql` through `0014_store_branding.sql` in filename order (including `0012_delivery_zone_ordering.sql` and both B3 migrations).
+4. Configure real delivery zones for `default-store`
+5. Deploy the application
+6. Test `default-store` checkout and public catalog/branding
 
 Do not create fake delivery zones in migrations.
 
@@ -104,6 +105,8 @@ Do not create fake delivery zones in migrations.
 New writes are store-scoped; legacy single-store objects remain usable.
 
 - Product images (public `product-images` bucket): new uploads use `products/<store-id>/<random-id>.<ext>`. Legacy `products/<random-id>.<ext>` objects keep their public URLs and are deletable only by the `default-store` merchant.
+- Product galleries use the same bucket and `products/<store-id>/<random-id>.<ext>` paths. A product has zero to four ordered gallery URLs in `gallery_images`; its primary image stays in `image`.
+- Store logos and hero images use the same bucket under `stores/<store-id>/logo/<random-id>.<ext>` and `stores/<store-id>/hero/<random-id>.<ext>`. JPEG, PNG, and WebP files up to 5 MiB are supported. Migration `0014` scopes merchant upload/read/delete policies to their own store namespace.
 - Receipts (private `receipts` bucket): new uploads use `receipts/<store-slug>/<random-id>.<ext>`. Legacy `receipts/<random-id>.<ext>` objects remain readable only by the `default-store` merchant.
 
 `<store-id>` is a UUID; `<store-slug>` matches `^[a-z0-9]+(-[a-z0-9]+)*$`; `<random-id>` is 32–36 URL-safe characters.
@@ -206,7 +209,7 @@ Anonymous users must: be able to read active products and active delivery zones 
 
 ## Storefront and delivery verification
 
-Run these after applying `0010` and `0011` to a disposable project. Runtime verification requires an actual Supabase/Postgres instance; if none is available, review the SQL statically and treat this as the procedure to run.
+Run these after applying `0010` through `0012` to a disposable project. Runtime verification requires an actual Supabase/Postgres instance; if none is available, review the SQL statically and treat this as the procedure to run.
 
 Schema and RLS:
 
@@ -312,3 +315,33 @@ To re-run: create a `initdb` cluster on a spare port with the shims above, apply
 `0001`–`0012` in order, seed two stores with products, delivery zones, and receipts, then run the
 behavioral checks listed under "Storefront and delivery verification". All of the above passed on
 the disposable cluster; none of it has been run against the configured shared project.
+
+## B3 migration verification record
+
+B3 migrations `0013` and `0014` were applied on a separate disposable local PostgreSQL 18 cluster
+with the same limited Supabase-compatible SQL shims described above. A product and customized
+settings row were inserted after `0012` and before `0013`, verifying that existing merchant data
+survives the new columns. The configured shared Supabase project was not accessed or modified.
+
+### Checks actually run
+
+- Applied the clean migration sequence `0001`–`0012`, seeded pre-B3 product/settings rows, then
+  applied `0013` and `0014` successfully.
+- Confirmed the existing product receives `compare_at_price = null` and `gallery_images = {}`;
+  existing store name/tagline remain intact, and new branding fields use valid defaults.
+- Confirmed a compare-at value equal to current price, five gallery URLs, and a non-hex primary
+  color are rejected. Confirmed a valid six-digit hex color is accepted.
+- Ran the new store-asset policies as `authenticated`: own-namespace uploads work, another store's
+  object metadata is hidden, cross-store uploads are rejected, and another store's object cannot
+  be deleted. Inspected policy predicates to confirm product-image policies remain tenant-scoped.
+- Ran in-memory catalog checks for name/category/description search, casing and whitespace,
+  category filtering, in-stock filtering, newest and both price sorts, zero results, featured
+  priority, newest fallback, and the four-product home limit.
+- `pnpm check` completed with zero errors. `pnpm build` completed successfully.
+
+### Not performed
+
+- Product/admin workflows against Supabase data, file upload or cleanup over the Storage HTTP API,
+  storefront interactive browser checks, and public image serving were not exercised. The local
+  surrogate has no GoTrue, PostgREST, or Storage HTTP API. These checks remain launch verification;
+  no live Supabase project was used.

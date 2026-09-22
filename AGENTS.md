@@ -60,7 +60,7 @@ Legacy customer URLs are lightweight redirects that preserve query parameters
 There is intentionally no InstaStore marketing homepage.
 
 ## Admin Routes
-- `/admin` — dashboard with live metrics (order value, total orders, active products, recent orders).
+- `/admin` — dashboard with verified revenue (Processing/Shipped/Fulfilled only), pending-verification count, active low-stock count (inventory <= 5), active-product count, two short attention queues, and the latest five orders.
 - `/admin/products` — product CRUD (name, slug, description, price, optional compare-at price, inventory, category, primary image, up to four ordered gallery images, SKU, featured, active).
 - `/admin/orders` — order list and status updates; order details show the delivery snapshot when present.
 - `/admin/delivery` — merchant delivery zones (Abuja/Lagos): view, add, edit, activate/deactivate, delete.
@@ -72,7 +72,7 @@ There is intentionally no InstaStore marketing homepage.
 - `products`: `id`, `store_id`, `name`, `slug`, `description`, `price`, nullable presentation-only `compare_at_price` (must exceed `price`), `inventory`, `category`, primary `image`, up to four ordered `gallery_images`, `sku`, `featured`, `is_active`, `created_at`, `updated_at`. Product slugs are unique per store (`unique (store_id, slug)`), so two merchants may use the same slug. Checkout trusts `price`, never `compare_at_price`.
 - `store_settings`: one row per store, primary key `store_id`, holding store name, tagline, description, logo URL, hero image URL, six-digit hex primary brand color, currency (`NGN`), bank details, and announcement. `delivery_fee` is deprecated (kept for now, no longer read by checkout).
 - `delivery_zones`: `id`, `store_id` (references `stores`, cascade delete), `city` (`Abuja` | `Lagos`), `name`, `provider`, `fee`, `estimate`, `note`, `is_active`, `sort_order`, `created_at`, `updated_at`; unique on `(store_id, city, lower(btrim(name)))`, so a merchant may reuse a zone name across cities. Public and merchant zone lists order by `city`, then `sort_order`, then `name`.
-- `orders`: `id`, `store_id`, `public_code`, `customer_name`, `customer_phone`, `customer_instagram`, `items` (jsonb), `subtotal`, `shipping_fee`, `total`, `status`, `shipping_address` (jsonb), `receipt_path`, `inventory_restocked`, `delivery_zone_id` (references `delivery_zones` `on delete set null`), `delivery_city`, `delivery_zone_name`, `delivery_provider`, `delivery_estimate`, `created_at`, `updated_at`. Historical orders keep the delivery snapshot columns null.
+- `orders`: `id`, `store_id`, `public_code`, `customer_name`, `customer_phone`, `customer_instagram`, `items` (jsonb), `subtotal`, `shipping_fee`, `total`, `status`, `shipping_address` (jsonb), `receipt_path`, `inventory_restocked`, `delivery_zone_id` (references `delivery_zones` `on delete set null`), `delivery_city`, `delivery_zone_name`, `delivery_provider`, `delivery_estimate`, `attribution` (bounded allowlisted jsonb, default `{}`), `created_at`, `updated_at`. Historical orders keep delivery snapshots null and have empty attribution by default.
 - Each merchant (profile) belongs to exactly one store. Admin users are Supabase Auth users with a matching `profiles` row whose `role = 'admin'` and whose store is `active`.
 
 ## Tenant Security Model
@@ -90,6 +90,16 @@ There is intentionally no InstaStore marketing homepage.
   - `Shipped` → `Fulfilled`
 - `Fulfilled` and `Cancelled` are terminal; repeated same-status calls are idempotent.
 - Cancellation restores reserved inventory exactly once (`inventory_restocked`) and only before shipment.
+
+## Measurement and consent
+- walkerOS is the structured storefront event model/collector; a local destination adapter forwards Analytics-consented events to an external Umami instance. Umami is not embedded or hosted by InstaStore.
+- Public runtime configuration is optional: `PUBLIC_UMAMI_SCRIPT_URL`, `PUBLIC_UMAMI_WEBSITE_ID`, and optionally `PUBLIC_UMAMI_HOST_URL`. Missing configuration is a no-op.
+- Necessary is always enabled. Analytics and Marketing default off; the versioned choice is stored in localStorage and can be reopened via the storefront footer. There is no Marketing destination in this batch.
+- Tracked events: page view, product view, search submit, product add, cart view, checkout start, order submit. Every event includes `store_id` and `store_slug`; no customer identity, address, receipt path, or tracking code is sent. Order submit means order created, not verified payment.
+- Migration `0015_measurement_foundation.sql` adds `orders.attribution`; its RPC accepts only landing/referrer, approved UTM/click-id fields, consent, and random store-scoped visitor/session IDs, with consent checks and maximum lengths. URL queries/hashes are stripped. No analytics-events table or Meta Pixel/CAPI is used.
+
+## T09 real-integration launch gate
+T09 must exercise a real, isolated Supabase project and real external Umami before launch. Verify GoTrue login/session, PostgREST queries and RPC calls, actual Storage HTTP uploads, receipt MIME/size limits, product image uploads, logo/hero uploads, signed private receipt reads, public image delivery, complete customer checkout, merchant payment verification, stock updates, and order tracking. Measurement checks must confirm the real Umami script loads only after Analytics consent, event receipt at Umami, no Umami request before consent, preference changes, and attribution stored on a real order. Disposable PostgreSQL migration tests do not replace these checks.
 
 ## Storage
 - Receipts: private `receipts` bucket (5 MiB; JPEG/PNG/PDF). New uploads go to `receipts/<store-slug>/<random-id>.<ext>` and the slug must belong to an active store — unknown or suspended store namespaces are rejected by the storage policy. Historical `receipts/<random-id>.<ext>` paths remain readable by the default-store merchant only. Only admins can read. Handled by `uploadReceipt` in `src/lib/orders.ts`.
@@ -128,7 +138,7 @@ There is intentionally no InstaStore marketing homepage.
 
 ## Common Workflows
 - `pnpm dev` — start the local dev server.
-- `pnpm build` — production build.
+- `pnpm build` — production build; Umami configuration is optional.
 - `pnpm preview` — serve the production build.
 - `pnpm check` — Astro type check.
 - `pnpm clean` — clear `dist`/`.astro` caches.

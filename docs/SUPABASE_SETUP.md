@@ -29,8 +29,9 @@ This is the fresh-install path for a **new, empty Supabase project**. Never run 
    - `0010_storefront_tenancy_and_delivery_zones.sql`
    - `0011_trusted_delivery_checkout.sql`
    - `0012_delivery_zone_ordering.sql`
-   - `0013_product_merchandising.sql`
-   - `0014_store_branding.sql`
+    - `0013_product_merchandising.sql`
+    - `0014_store_branding.sql`
+    - `0015_measurement_foundation.sql`
 7. Create the first user in Supabase Auth (email/password or the configured Auth provider).
 8. Copy the Auth user's UUID and insert the matching admin profile for the existing `default-store` in the SQL editor:
 
@@ -345,3 +346,42 @@ survives the new columns. The configured shared Supabase project was not accesse
   storefront interactive browser checks, and public image serving were not exercised. The local
   surrogate has no GoTrue, PostgREST, or Storage HTTP API. These checks remain launch verification;
   no live Supabase project was used.
+
+## B4 migration and attribution verification record
+
+B4 migrations `0001` through `0015` were applied in order to a fresh disposable local PostgreSQL 18 cluster on a private local port. The only Supabase compatibility shims were local SQL roles and minimal `auth.uid()`, `auth.users`, `storage.objects`, and `storage.allow_only_operation()` definitions. No shared or production Supabase project was contacted.
+
+### Checks actually run
+
+- Fresh migration chain `0001`–`0015` completed successfully.
+- On a second fresh disposable database, seeded a valid historical order after `0014`, applied `0015`, and confirmed it remained present with `{}` attribution and JSON object type.
+- Inserted orders with empty attribution, analytics consent, and marketing-only consent. Confirmed the attribution constraint/default is an object; analytics fields/IDs are omitted without Analytics consent; Meta IDs are omitted without Marketing consent; unknown keys are ignored.
+- Confirmed query strings and hashes are removed from landing URLs/referrers, UTM fields are limited to 200 characters, Meta identifiers to 500 characters, and overlong values are truncated.
+- Retried an existing receipt with different attribution and confirmed the same order code is returned, its original attribution is unchanged, and stock is not decremented twice.
+- Valid trusted-price/zone orders created successfully and reserved inventory. Manipulated totals rolled back without inventory loss; cross-store products, mismatched-store receipts, and inactive delivery zones were rejected.
+- Temporary Node assertions covered verified revenue statuses, pending counts, draft exclusion, the active inventory 0–5 boundary, five-row queue limits, every allowed/terminal status transition, invalid query-status fallback, consent version/persistence shape, consent-gated attribution capture, URL stripping, and store-scoped random ID behavior.
+- `pnpm check` and `pnpm build` passed with the Umami configuration absent. Existing unrelated React `FormEvent` deprecation hints remain.
+
+### Not performed; required for T09
+
+- GoTrue login/session, PostgREST queries/RPCs, actual Storage HTTP upload/read behavior, receipt MIME/size enforcement, product image and logo/hero upload, private signed receipt reads, and public image delivery.
+- Full customer checkout in a real Supabase project, merchant payment verification, stock changes through the real app, and order tracking.
+- A real Umami script load after Analytics consent, real event receipt, network inspection proving no request before consent, browser preference-change checks, and a real order with stored attribution.
+
+T09 must complete those real-integration checks before launch. The SQL-shim results above are not a substitute.
+
+## Consent-aware measurement configuration
+
+Optional build-time values may be added to `.env`:
+
+```env
+PUBLIC_UMAMI_SCRIPT_URL=https://analytics.example.com/script.js
+PUBLIC_UMAMI_WEBSITE_ID=your-umami-website-id
+PUBLIC_UMAMI_HOST_URL=https://analytics.example.com
+```
+
+`PUBLIC_UMAMI_HOST_URL` is optional; the other two values are also optional for the build. When missing, the event adapter is a no-op. Necessary is always enabled; Analytics and Marketing default off and are saved in a versioned localStorage preference without customer identity. walkerOS supplies the storefront event model; the local Umami adapter uses manually named events with automatic tracker behavior disabled. No Meta destination is loaded.
+
+The event taxonomy is page view, product view, search submit, product add, cart view, checkout start, and order submit. Event data always identifies `store_id` and `store_slug`, and otherwise contains only event-specific safe fields. No customer PII, delivery details, receipt path, bank details, or tracking code may be sent. `orders.attribution` (migration `0015`) stores only the allowlisted fields described above after a second server-side whitelist/length/consent check. Landing and referrer query/hash components are removed. The same receipt retry never changes existing attribution.
+
+For each storefront, footer **Privacy choices** reopens Necessary/Analytics/Marketing controls. Analytics must be explicitly accepted before loading the external script; rejecting both optional categories must leave browsing and checkout functional.

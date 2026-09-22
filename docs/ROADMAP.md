@@ -17,9 +17,9 @@ and independently reviewable.
 | Complete | T04  | Product merchandising             |
 | Complete | T05  | Search and catalog discovery      |
 | Complete | T06  | Store branding                    |
-| Next     | T07  | Merchant operations               |
-| Pending  | T08  | Measurement foundation            |
-| Pending  | T09  | Launch hardening                  |
+| Complete | T07  | Merchant operations               |
+| Complete | T08  | Measurement foundation            |
+| Next     | T09  | Launch hardening                  |
 | Pending  | T10  | First merchant cohort             |
 | Later    | T11  | Self-service merchant signup      |
 | Later    | T12  | Meta Pixel and CAPI               |

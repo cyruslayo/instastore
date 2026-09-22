@@ -46,6 +46,7 @@ InstaStore is a storefront and order-management product for Instagram-first merc
 
 - walkerOS.
 - Umami.
+- Consent-aware, anonymous storefront events and bounded order attribution; merchant-facing analytics dashboards are not part of this MVP.
 
 ## Out of Scope (Non-Goals)
 

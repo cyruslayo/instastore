@@ -1,16 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ProductCard from "@/components/storefront/ProductCard";
 import { filterCatalogProducts, type CatalogSort } from "@/lib/catalogDiscovery";
 import type { Product } from "@/lib/types";
+import { trackStoreEvent } from "@/lib/analytics/events";
+import { readConsent } from "@/lib/analytics/consent";
 
 
 export default function StoreCatalog({
   storeSlug,
+  storeId,
   products,
 }: {
   storeSlug: string;
+  storeId: string;
   products: Product[];
 }) {
   const [query, setQuery] = useState("");
@@ -20,6 +24,28 @@ export default function StoreCatalog({
   const categories = useMemo(() => [...new Set(products.map((p) => p.category.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b)), [products]);
   const filtered = useMemo(() => filterCatalogProducts(products, { query, category, inStockOnly, sort }), [category, inStockOnly, products, query, sort]);
   const hasFilters = Boolean(query.trim() || category !== "all" || inStockOnly || sort !== "newest");
+  const lastSearch = useRef("");
+  const resultCount = useRef(filtered.length);
+  resultCount.current = filtered.length;
+  useEffect(() => {
+    const normalizedQuery = query.trim();
+    if (!normalizedQuery) return;
+    const sendSearch = () => {
+      if (!readConsent()?.analytics) return;
+      const resultCountValue = resultCount.current;
+      const dedupeKey = `${normalizedQuery.toLocaleLowerCase()}|${resultCountValue}`;
+      if (lastSearch.current === dedupeKey) return;
+      lastSearch.current = dedupeKey;
+      trackStoreEvent("search submit", { store_id: storeId, store_slug: storeSlug, query: normalizedQuery.slice(0, 200), result_count: resultCountValue });
+    };
+    let timer = window.setTimeout(sendSearch, 600);
+    const scheduleSearch = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(sendSearch, 600);
+    };
+    window.addEventListener("instastore:consent", scheduleSearch);
+    return () => { window.clearTimeout(timer); window.removeEventListener("instastore:consent", scheduleSearch); };
+  }, [query, storeId, storeSlug]);
 
   return (
     <section aria-label="Product catalog" className="space-y-stack-md">

@@ -4,8 +4,11 @@ import { cartCountFor, cartItemsFor, cartTotalFor, getCartLineKey, removeItem, u
 import { formatNaira } from '@/lib/utils';
 import { storePath } from '@/lib/storePaths';
 import { useHydrated } from '@/lib/useHydrated';
+import { useEffect, useRef } from 'react';
+import { trackStoreEvent } from '@/lib/analytics/events';
+import { readConsent } from '@/lib/analytics/consent';
 
-export default function Cart({ storeSlug }: { storeSlug: string }) {
+export default function Cart({ storeId, storeSlug }: { storeId: string; storeSlug: string }) {
   const hydrated = useHydrated();
   const items = useStore(cartItemsFor(storeSlug));
   const subtotal = useStore(cartTotalFor(storeSlug));
@@ -13,6 +16,17 @@ export default function Cart({ storeSlug }: { storeSlug: string }) {
 
   const visibleItems = hydrated ? items : [];
   const visibleSubtotal = hydrated ? subtotal : 0;
+  const viewed = useRef(false);
+  useEffect(() => {
+    const reportCartView = () => {
+      if (!hydrated || !readConsent()?.analytics || viewed.current) return;
+      viewed.current = true;
+      trackStoreEvent('cart view', { store_id: storeId, store_slug: storeSlug, item_count: items.reduce((count, item) => count + item.quantity, 0), subtotal });
+    };
+    reportCartView();
+    window.addEventListener('instastore:consent', reportCartView);
+    return () => window.removeEventListener('instastore:consent', reportCartView);
+  }, [hydrated, items, storeId, storeSlug, subtotal]);
   const checkoutHref = storePath(storeSlug, 'checkout');
 
   return (

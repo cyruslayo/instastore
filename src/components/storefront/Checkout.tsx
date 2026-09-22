@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "@nanostores/react";
 import { cartItemsFor, cartTotalFor, clearCart } from "@/store/cart";
 import { formatNaira } from "@/lib/utils";
@@ -13,6 +13,9 @@ import { getActiveDeliveryZones } from "@/lib/deliveryZones";
 import { createStoreOrder, uploadReceipt } from "@/lib/orders";
 import { useHydrated } from "@/lib/useHydrated";
 import type { DeliveryCity, DeliveryZone } from "@/lib/types";
+import { buildOrderAttribution } from "@/lib/analytics/attribution";
+import { trackStoreEvent } from "@/lib/analytics/events";
+import { readConsent } from "@/lib/analytics/consent";
 
 const RECEIPT_TYPES = ["image/jpeg", "image/png", "application/pdf"] as const;
 const CITIES: DeliveryCity[] = ["Abuja", "Lagos"];
@@ -26,7 +29,7 @@ function hasBankDetails(settings: SiteSettings): boolean {
   );
 }
 
-export default function Checkout({ storeSlug }: { storeSlug: string }) {
+export default function Checkout({ storeId, storeSlug }: { storeId: string; storeSlug: string }) {
   const hydrated = useHydrated();
   const items = useStore(cartItemsFor(storeSlug));
   const cartSubtotal = useStore(cartTotalFor(storeSlug));
@@ -52,6 +55,7 @@ export default function Checkout({ storeSlug }: { storeSlug: string }) {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [trackingCode, setTrackingCode] = useState<string | null>(null);
+  const checkoutStarted = useRef(false);
 
   useEffect(() => {
     fetchLiveSiteSettings(storeSlug)
@@ -74,6 +78,16 @@ export default function Checkout({ storeSlug }: { storeSlug: string }) {
 
   const visibleItems = hydrated ? items : [];
   const subtotal = hydrated ? cartSubtotal : 0;
+  useEffect(() => {
+    const reportCheckoutStart = () => {
+      if (!hydrated || items.length === 0 || !readConsent()?.analytics || checkoutStarted.current) return;
+      checkoutStarted.current = true;
+      trackStoreEvent('checkout start', { store_id: storeId, store_slug: storeSlug, item_count: items.reduce((count, item) => count + item.quantity, 0), subtotal });
+    };
+    reportCheckoutStart();
+    window.addEventListener('instastore:consent', reportCheckoutStart);
+    return () => window.removeEventListener('instastore:consent', reportCheckoutStart);
+  }, [checkoutStarted, hydrated, items, storeId, storeSlug, subtotal]);
   const cityZones = useMemo(
     () => (form.city ? zones.filter((zone) => zone.city === form.city) : []),
     [zones, form.city],
@@ -197,7 +211,9 @@ export default function Checkout({ storeSlug }: { storeSlug: string }) {
         receiptPath: uploadedPath,
         storeSlug,
         deliveryZoneId: selectedZone.id,
+        attribution: buildOrderAttribution(storeSlug),
       });
+      trackStoreEvent('order submit', { store_id: storeId, store_slug: storeSlug, item_count: visibleItems.reduce((count, item) => count + item.quantity, 0), subtotal });
       setTrackingCode(code);
       clearCart(storeSlug);
     } catch (submissionError) {

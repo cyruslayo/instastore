@@ -3,6 +3,7 @@ import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import StorefrontFooter from '@/components/storefront/StorefrontFooter';
 import MotionProvider from '@/components/MotionProvider';
+import StorefrontAnalytics from '@/components/storefront/StorefrontAnalytics';
 import { fetchLiveSiteSettings, DEFAULT_SITE_SETTINGS } from '@/lib/siteSettings';
 import { getStoreOnPrimary } from '@/lib/storeBranding';
 import '@/styles/global.css';
@@ -12,6 +13,7 @@ interface Props {
   description?: string;
   pathname: string;
   storeSlug: string;
+  storeId: string;
   primaryColor?: string;
   image?: string;
   siteName?: string;
@@ -23,6 +25,7 @@ const {
   description = 'Browse currently available products and order directly from this storefront.',
   pathname,
   storeSlug,
+  storeId,
   primaryColor,
   image,
   siteName = 'Storefront',
@@ -77,6 +80,7 @@ const brandStyle = `--store-primary:${hex.toLowerCase()};--store-on-primary:${on
       </div>
     </MotionProvider>
     <StorefrontFooter storeSlug={storeSlug} client:load />
+    <StorefrontAnalytics storeId={storeId} storeSlug={storeSlug} pathname={pathname} client:load />
     <BottomNav pathname={pathname} storeSlug={storeSlug} client:load />
 
     <!-- Instagram In-App Browser & Anchor Alignment script -->

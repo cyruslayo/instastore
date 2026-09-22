@@ -1,18 +1,32 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { addItem } from "@/store/cart";
 import { formatNaira } from "@/lib/utils";
 import type { Product } from "@/lib/types";
 import ProductDescription from "@/components/storefront/ProductDescription";
+import { trackStoreEvent } from "@/lib/analytics/events";
+import { readConsent } from "@/lib/analytics/consent";
 
-export default function ProductDetailIsland({ product, storeSlug }: { product: Product; storeSlug: string }) {
+export default function ProductDetailIsland({ product, storeId, storeSlug }: { product: Product; storeId: string; storeSlug: string }) {
   const [quantity, setQuantity] = useState(1);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [addedNotice, setAddedNotice] = useState(false);
+  const productViewSent = useRef(false);
   const available = product.inventory > 0 && product.is_active;
   const images = [...new Set([product.image, ...(product.gallery_images || [])].filter((image): image is string => Boolean(image?.trim())))];
   const [currentImage, setCurrentImage] = useState(images[0] || "");
   const salePrice = product.compare_at_price != null && product.compare_at_price > product.price;
+
+  useEffect(() => {
+    const reportProductView = () => {
+      if (!readConsent()?.analytics || productViewSent.current) return;
+      productViewSent.current = true;
+      trackStoreEvent("product view", { store_id: storeId, store_slug: storeSlug, product_id: product.id, category: product.category, price: Number(product.price), in_stock: product.inventory > 0 });
+    };
+    reportProductView();
+    window.addEventListener("instastore:consent", reportProductView);
+    return () => window.removeEventListener("instastore:consent", reportProductView);
+  }, [product.category, product.id, product.inventory, product.price, storeId, storeSlug]);
 
   const handleAddToCart = () => {
     if (!available) return;
@@ -26,6 +40,7 @@ export default function ProductDetailIsland({ product, storeSlug }: { product: P
       sku: product.sku,
       inventory: product.inventory,
     });
+    trackStoreEvent("product add", { store_id: storeId, store_slug: storeSlug, product_id: product.id, category: product.category, price: Number(product.price), quantity });
     setAddedNotice(true);
     setTimeout(() => setAddedNotice(false), 2500);
   };

@@ -1,6 +1,7 @@
 import { getSupabase } from "./supabase";
 import { normalizeStoreSlug } from "./stores";
 import type { CustomerOrderStatus, ShippingAddress } from "./types";
+import type { OrderAttribution } from "@/lib/analytics/attribution";
 
 const RECEIPT_MIME_TYPES = new Set([
   "image/jpeg",
@@ -70,6 +71,7 @@ export async function createStoreOrder(payload: {
   receiptPath: string;
   storeSlug: string;
   deliveryZoneId: string;
+  attribution?: OrderAttribution;
 }): Promise<string> {
   const storeSlug = validateStoreSlug(payload.storeSlug);
   const deliveryZoneId = validateDeliveryZoneId(payload.deliveryZoneId);
@@ -83,6 +85,7 @@ export async function createStoreOrder(payload: {
     p_receipt_path: payload.receiptPath,
     p_store_slug: storeSlug,
     p_delivery_zone_id: deliveryZoneId,
+    p_attribution: payload.attribution ?? {},
   };
   let lastError: unknown;
   for (let attempt = 1; attempt <= 3; attempt += 1) {

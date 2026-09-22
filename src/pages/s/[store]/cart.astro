@@ -12,7 +12,7 @@ const store = await getPublicStoreBySlug(storeSlug);
 if (!store) Astro.response.status = 404;
 ---
 {store ? (
-<Layout pathname={storePath(storeSlug, 'cart')} storeSlug={storeSlug} title={`Your Bag | ${store.name}`} siteName={store.name}><Cart client:load storeSlug={storeSlug} /></Layout>
+<Layout pathname={storePath(storeSlug, 'cart')} storeSlug={storeSlug} storeId={store.id} title={`Your Bag | ${store.name}`} siteName={store.name}><Cart client:load storeId={store.id} storeSlug={storeSlug} /></Layout>
 ) : (
   <StoreUnavailable storeSlug={storeSlug} />
 )}

@@ -21,7 +21,7 @@ if (store) {
 if (store && !product) return Astro.redirect(storePath(storeSlug, 'shop'));
 ---
 {store && product ? (
-<Layout pathname={storePath(storeSlug, `product/${product.slug}`)} storeSlug={storeSlug} title={`${product.name} | ${store.name}`} description={product.description} image={product.image} siteName={store.name}><ProductDetailIsland client:load product={product} storeSlug={storeSlug} /></Layout>
+<Layout pathname={storePath(storeSlug, `product/${product.slug}`)} storeSlug={storeSlug} storeId={store.id} title={`${product.name} | ${store.name}`} description={product.description} image={product.image} siteName={store.name}><ProductDetailIsland client:load product={product} storeId={store.id} storeSlug={storeSlug} /></Layout>
 ) : (
   <StoreUnavailable storeSlug={storeSlug} />
 )}

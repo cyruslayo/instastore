@@ -17,6 +17,12 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.86.2
         version: 2.112.3(@opentelemetry/api@1.9.1)
+      '@walkeros/collector':
+        specifier: 4.6.1
+        version: 4.6.1
+      '@walkeros/web-source-browser':
+        specifier: 4.6.1
+        version: 4.6.1
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -1891,6 +1897,18 @@ packages:
 
   '@vscode/l10n@0.0.18':
     resolution: {integrity: sha512-KYSIHVmslkaCDyw013pphY+d7x1qV8IZupYfeIfzNA+nsaWHbn5uPuQRvdRFsa9zFzGeudPuoGoZ1Op4jrJXIQ==}
+
+  '@walkeros/collector@4.6.1':
+    resolution: {integrity: sha512-OGt4EVkD22gQHnST+Cw6j0rvss+g0n6qkmOf516ZVSiwV0nTEberWXOgKoQbGGzFlLZtCyMdXAguwwLWsZOs2Q==}
+
+  '@walkeros/core@4.6.1':
+    resolution: {integrity: sha512-KCM9GveeKF4UHnS3Wc6XmQaOXCaFml+um34LLlwrgOPqnU1rMKBxpAcAbT12/M9BgUWCUhxHHaACd2DyndIgyA==}
+
+  '@walkeros/web-core@4.6.1':
+    resolution: {integrity: sha512-SQSVM4Rw6WBmFbhNWsu3N2FGHz9T1qDJceGOUVr3Eg42il2uuBVKtCk0SfXE2inV0FGzSE+qsgVn0KuSLoutVg==}
+
+  '@walkeros/web-source-browser@4.6.1':
+    resolution: {integrity: sha512-ildJpiNlorL0+gXzhSpz15y4UeggxbwqhYK+0wid2Sw9VNk5dBZIujJvJzYJK/xlrDltBZJgulcDYAiGTSR0Wg==}
 
   '@whatwg-node/disposablestack@0.0.6':
     resolution: {integrity: sha512-LOtTn+JgJvX8WfBVJtF08TGrdjuFzGJc4mkP8EdDI8ADbvO7kiexYep1o8dwnt0okb0jYclCDXF13xU7Ge4zSw==}
@@ -5814,6 +5832,24 @@ snapshots:
       vscode-uri: 3.1.0
 
   '@vscode/l10n@0.0.18': {}
+
+  '@walkeros/collector@4.6.1':
+    dependencies:
+      '@walkeros/core': 4.6.1
+
+  '@walkeros/core@4.6.1':
+    dependencies:
+      zod: 4.6.5
+
+  '@walkeros/web-core@4.6.1':
+    dependencies:
+      '@walkeros/core': 4.6.1
+
+  '@walkeros/web-source-browser@4.6.1':
+    dependencies:
+      '@walkeros/collector': 4.6.1
+      '@walkeros/core': 4.6.1
+      '@walkeros/web-core': 4.6.1
 
   '@whatwg-node/disposablestack@0.0.6':
     dependencies:

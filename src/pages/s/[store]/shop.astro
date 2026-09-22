@@ -23,8 +23,8 @@ if (store) {
 const storeName = settings.storeName.trim() || 'Your Store';
 ---
 {store ? (
-<Layout pathname={storePath(storeSlug, 'shop')} storeSlug={storeSlug} primaryColor={settings.primaryColor} title={`Shop | ${storeName}`} description={`Browse currently available products from ${storeName}.`} siteName={storeName}>
-  <main class="max-w-container-max mx-auto px-margin-mobile pb-section-gap pt-24 md:px-margin-desktop md:pt-32"><section class="mx-auto max-w-2xl py-section-gap text-center"><h1 class="mb-stack-md font-headline-md text-headline-md text-primary">Shop</h1><p class="font-body-md text-body-md text-on-surface-variant">Browse what is currently available.</p></section><StoreCatalog client:load storeSlug={storeSlug} products={products} /></main>
+<Layout pathname={storePath(storeSlug, 'shop')} storeSlug={storeSlug} storeId={store.id} primaryColor={settings.primaryColor} title={`Shop | ${storeName}`} description={`Browse currently available products from ${storeName}.`} siteName={storeName}>
+  <main class="max-w-container-max mx-auto px-margin-mobile pb-section-gap pt-24 md:px-margin-desktop md:pt-32"><section class="mx-auto max-w-2xl py-section-gap text-center"><h1 class="mb-stack-md font-headline-md text-headline-md text-primary">Shop</h1><p class="font-body-md text-body-md text-on-surface-variant">Browse what is currently available.</p></section><StoreCatalog client:load storeId={store.id} storeSlug={storeSlug} products={products} /></main>
 </Layout>
 ) : (
   <StoreUnavailable storeSlug={storeSlug} />

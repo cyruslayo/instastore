@@ -11,6 +11,7 @@ export interface DeliveryZoneInput {
   estimate?: string | null;
   note?: string | null;
   is_active?: boolean;
+  sort_order?: number;
 }
 
 function normalizeZoneValues(input: Partial<DeliveryZoneInput>): Record<string, unknown> {
@@ -22,6 +23,7 @@ function normalizeZoneValues(input: Partial<DeliveryZoneInput>): Record<string, 
   if (input.estimate !== undefined) payload.estimate = input.estimate?.trim() || null;
   if (input.note !== undefined) payload.note = input.note?.trim() || null;
   if (input.is_active !== undefined) payload.is_active = input.is_active;
+  if (input.sort_order !== undefined) payload.sort_order = input.sort_order;
   return payload;
 }
 
@@ -35,6 +37,7 @@ export async function getActiveDeliveryZones(storeSlug: string): Promise<Deliver
       .eq('store_id', store.id)
       .eq('is_active', true)
       .order('city')
+      .order('sort_order')
       .order('name');
     if (error) return [];
     return (data ?? []) as DeliveryZone[];
@@ -51,6 +54,7 @@ export async function listMerchantDeliveryZones(): Promise<DeliveryZone[]> {
     .select('*')
     .eq('store_id', profile.store_id)
     .order('city')
+    .order('sort_order')
     .order('name');
   if (error) throw error;
   return (data ?? []) as DeliveryZone[];

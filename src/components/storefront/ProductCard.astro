@@ -8,11 +8,12 @@ interface Props {
     image?: string;
     description?: string;
   };
+  storeSlug: string;
   aspect?: string;
   className?: string;
 }
 
-const { product, aspect = 'aspect-[3/4]', className = '' } = Astro.props;
+const { product, storeSlug, aspect = 'aspect-[3/4]', className = '' } = Astro.props;
 const price = new Intl.NumberFormat('en-NG', {
   style: 'currency',
   currency: 'NGN',
@@ -20,7 +21,7 @@ const price = new Intl.NumberFormat('en-NG', {
 }).format(Number(product.price ?? 0));
 ---
 
-<a href={`/product/${product.slug}`} class={`group cursor-pointer block ${className}`}>
+<a href={`/s/${storeSlug}/product/${product.slug}`} class={`group cursor-pointer block ${className}`}>
   <div class={`relative bg-surface-container-low rounded-xl overflow-hidden mb-stack-md ${aspect} flex items-center justify-center transition-transform duration-500 group-hover:-translate-y-2 botanical-shadow`}>
     {product.image ? (
       <img

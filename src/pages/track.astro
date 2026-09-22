@@ -1,6 +1,3 @@
 ---
-import Layout from '@/layouts/Layout.astro';
-import TrackOrder from '@/components/storefront/TrackOrder';
-export const prerender = true;
+return Astro.redirect(`/s/default-store/track${Astro.url.search}`);
 ---
-<Layout pathname="/track" title="Track Order | Your Store" description="Check order status with your tracking code and phone number."><TrackOrder client:load /></Layout>

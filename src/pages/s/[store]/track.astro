@@ -1,0 +1,18 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import StoreUnavailable from '@/components/storefront/StoreUnavailable.astro';
+import TrackOrder from '@/components/storefront/TrackOrder';
+import { getPublicStoreBySlug } from '@/lib/stores';
+import { storePath } from '@/lib/storePaths';
+
+export const prerender = false;
+
+const storeSlug = String(Astro.params.store ?? '');
+const store = await getPublicStoreBySlug(storeSlug);
+if (!store) Astro.response.status = 404;
+---
+{store ? (
+<Layout pathname={storePath(storeSlug, 'track')} storeSlug={storeSlug} title={`Track Order | ${store.name}`} description="Check order status with your tracking code and phone number." siteName={store.name}><TrackOrder client:load storeSlug={storeSlug} /></Layout>
+) : (
+  <StoreUnavailable storeSlug={storeSlug} />
+)}

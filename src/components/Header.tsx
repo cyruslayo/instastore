@@ -1,29 +1,45 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useStore } from "@nanostores/react";
-import { cartCount } from "@/store/cart";
+import { cartCountFor } from "@/store/cart";
 import { useHydrated } from "@/lib/useHydrated";
+import { storePath } from "@/lib/storePaths";
 import {
   DEFAULT_SITE_SETTINGS,
   fetchLiveSiteSettings,
   type SiteSettings,
 } from "@/lib/siteSettings";
 
-export default function Header({ pathname }: { pathname: string }) {
+export default function Header({
+  pathname,
+  storeSlug,
+}: {
+  pathname: string;
+  storeSlug: string;
+}) {
   const hydrated = useHydrated();
-  const count = useStore(cartCount);
+  const count = useStore(cartCountFor(storeSlug));
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
   useEffect(() => {
-    fetchLiveSiteSettings()
+    fetchLiveSiteSettings(storeSlug)
       .then(setSettings)
       .catch(() => undefined);
-  }, []);
-  const isCheckout = pathname.startsWith("/checkout");
-  const showBack =
-    isCheckout ||
-    pathname.startsWith("/cart") ||
-    pathname.startsWith("/product");
+  }, [storeSlug]);
+  const homePath = storePath(storeSlug);
+  const cartPath = storePath(storeSlug, "cart");
+  const checkoutPath = storePath(storeSlug, "checkout");
+  const productPath = storePath(storeSlug, "product");
+  const isCheckout = pathname === checkoutPath;
+  const isCart = pathname === cartPath;
+  const isProduct = pathname.startsWith(`${productPath}/`);
+  const showBack = isCheckout || isCart || isProduct;
   const brand = settings.storeName.trim() || "Your Store";
+  const navigation = [
+    { href: homePath, label: "Home" },
+    { href: storePath(storeSlug, "shop"), label: "Shop" },
+    { href: storePath(storeSlug, "track"), label: "Track Order" },
+    { href: cartPath, label: "Bag" },
+  ];
   return (
     <>
       {settings.announcement.enabled &&
@@ -50,7 +66,7 @@ export default function Header({ pathname }: { pathname: string }) {
             <div className="w-11 md:w-8" />
           )}
           <a
-            href="/"
+            href={homePath}
             className="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg tracking-tighter text-primary text-center flex-1 flex justify-center items-center"
           >
             {settings.logoUrl.trim() ? (
@@ -68,7 +84,7 @@ export default function Header({ pathname }: { pathname: string }) {
             <div className="w-11 md:w-8" />
           ) : (
             <a
-              href="/cart"
+              href={cartPath}
               aria-label={`Bag, ${hydrated ? count : 0} items`}
               className="touch-target flex items-center justify-center rounded-full text-on-surface-variant relative"
             >
@@ -81,26 +97,19 @@ export default function Header({ pathname }: { pathname: string }) {
             </a>
           )}
         </div>
-        {!isCheckout &&
-          !pathname.startsWith("/cart") &&
-          !pathname.startsWith("/product") && (
-            <nav className="hidden md:flex justify-center gap-8 py-4 border-t border-outline-variant/20">
-              {[
-                ["/", "Home"],
-                ["/shop", "Shop"],
-                ["/track", "Track Order"],
-                ["/cart", "Bag"],
-              ].map(([href, label]) => (
-                <a
-                  href={href}
-                  className={`font-label-sm text-label-sm uppercase tracking-widest ${pathname === href ? "text-primary border-b-2 border-primary pb-1" : "text-on-surface-variant hover:text-primary"}`}
-                  key={href}
-                >
-                  {label}
-                </a>
-              ))}
-            </nav>
-          )}
+        {!isCheckout && !isCart && !isProduct && (
+          <nav className="hidden md:flex justify-center gap-8 py-4 border-t border-outline-variant/20">
+            {navigation.map(({ href, label }) => (
+              <a
+                href={href}
+                className={`font-label-sm text-label-sm uppercase tracking-widest ${pathname === href ? "text-primary border-b-2 border-primary pb-1" : "text-on-surface-variant hover:text-primary"}`}
+                key={href}
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
+        )}
       </header>
     </>
   );

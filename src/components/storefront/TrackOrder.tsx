@@ -10,7 +10,7 @@ const statuses: OrderStatus[] = [
   "Fulfilled",
 ];
 
-export default function TrackOrder() {
+export default function TrackOrder({ storeSlug }: { storeSlug: string }) {
   const [code, setCode] = useState("");
   const [phone, setPhone] = useState("");
   const [order, setOrder] = useState<CustomerOrderStatus | null>(null);
@@ -33,7 +33,7 @@ export default function TrackOrder() {
     setError(null);
     setOrder(null);
     try {
-      const result = await getOrderStatus(code, phone);
+      const result = await getOrderStatus(storeSlug, code, phone);
       if (result) setOrder(result);
       else setError("No order matched those details.");
     } catch {
@@ -119,12 +119,28 @@ export default function TrackOrder() {
             </div>
           ))}
           <div className="border-t border-outline-variant mt-4 pt-4 space-y-2">
+            {(order.delivery_city || order.delivery_zone_name) && (
+              <div className="flex justify-between">
+                <span>Delivery</span>
+                <span>
+                  {[order.delivery_city, order.delivery_zone_name]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+              </div>
+            )}
+            {order.delivery_provider && (
+              <div className="flex justify-between">
+                <span>Provider</span>
+                <span>{order.delivery_provider}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span>Subtotal</span>
               <span>{formatAmount(order.subtotal)}</span>
             </div>
             <div className="flex justify-between">
-              <span>Delivery</span>
+              <span>Delivery fee</span>
               <span>{formatAmount(order.shipping_fee)}</span>
             </div>
             <div className="flex justify-between font-bold">

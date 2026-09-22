@@ -1,6 +1,3 @@
 ---
-import Layout from '@/layouts/Layout.astro';
-import Cart from '@/components/storefront/Cart';
-export const prerender = true;
+return Astro.redirect(`/s/default-store/cart${Astro.url.search}`);
 ---
-<Layout pathname="/cart" title="Your Bag | Your Store"><Cart client:load /></Layout>

@@ -18,13 +18,13 @@ function whatsappUrl(value: string): string | null {
   return digits ? `https://wa.me/${digits}` : null;
 }
 
-export default function StorefrontFooter() {
+export default function StorefrontFooter({ storeSlug }: { storeSlug: string }) {
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
   useEffect(() => {
-    fetchLiveSiteSettings()
+    fetchLiveSiteSettings(storeSlug)
       .then(setSettings)
       .catch(() => undefined);
-  }, []);
+  }, [storeSlug]);
   const storeName = settings.storeName.trim() || "Your Store";
   const instagram = instagramUrl(settings.instagramHandle);
   const whatsapp = whatsappUrl(settings.whatsappNumber);

@@ -1,17 +1,22 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useStore } from "@nanostores/react";
-import { cartItems, cartTotal, clearCart } from "@/store/cart";
+import { cartItemsFor, cartTotalFor, clearCart } from "@/store/cart";
 import { formatNaira } from "@/lib/utils";
+import { storePath } from "@/lib/storePaths";
 import {
   fetchLiveSiteSettings,
   type SiteSettings,
   DEFAULT_SITE_SETTINGS,
 } from "@/lib/siteSettings";
+import { getActiveDeliveryZones } from "@/lib/deliveryZones";
 import { createStoreOrder, uploadReceipt } from "@/lib/orders";
 import { useHydrated } from "@/lib/useHydrated";
+import type { DeliveryCity, DeliveryZone } from "@/lib/types";
 
 const RECEIPT_TYPES = ["image/jpeg", "image/png", "application/pdf"] as const;
+const CITIES: DeliveryCity[] = ["Abuja", "Lagos"];
+const CITY_STATES: Record<DeliveryCity, string> = { Abuja: "FCT", Lagos: "Lagos" };
 
 function hasBankDetails(settings: SiteSettings): boolean {
   return Boolean(
@@ -21,21 +26,23 @@ function hasBankDetails(settings: SiteSettings): boolean {
   );
 }
 
-export default function Checkout() {
+export default function Checkout({ storeSlug }: { storeSlug: string }) {
   const hydrated = useHydrated();
-  const items = useStore(cartItems);
-  const cartSubtotal = useStore(cartTotal);
+  const items = useStore(cartItemsFor(storeSlug));
+  const cartSubtotal = useStore(cartTotalFor(storeSlug));
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [zones, setZones] = useState<DeliveryZone[]>([]);
+  const [zonesLoaded, setZonesLoaded] = useState(false);
   const [form, setForm] = useState({
     fullName: "",
     phone: "",
     address: "",
     address2: "",
     landmark: "",
-    city: "",
-    state: "",
+    city: "" as "" | DeliveryCity,
+    zoneId: "",
     instagramHandle: "",
     email: "",
   });
@@ -47,7 +54,7 @@ export default function Checkout() {
   const [trackingCode, setTrackingCode] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchLiveSiteSettings()
+    fetchLiveSiteSettings(storeSlug)
       .then((value) => {
         setSettings(value);
         setSettingsLoaded(true);
@@ -57,24 +64,52 @@ export default function Checkout() {
           "Store settings are unavailable. Please try again later.",
         ),
       );
-  }, []);
+  }, [storeSlug]);
+
+  useEffect(() => {
+    getActiveDeliveryZones(storeSlug)
+      .then(setZones)
+      .finally(() => setZonesLoaded(true));
+  }, [storeSlug]);
 
   const visibleItems = hydrated ? items : [];
   const subtotal = hydrated ? cartSubtotal : 0;
-  const deliveryFee = settingsLoaded ? settings.deliveryFee : null;
+  const cityZones = useMemo(
+    () => (form.city ? zones.filter((zone) => zone.city === form.city) : []),
+    [zones, form.city],
+  );
+  const selectedZone = useMemo(
+    () => cityZones.find((zone) => zone.id === form.zoneId) ?? null,
+    [cityZones, form.zoneId],
+  );
+  const deliveryFee = selectedZone ? Number(selectedZone.fee) : null;
   const total = deliveryFee === null ? null : subtotal + deliveryFee;
+  const settingsReady = settingsLoaded && !settingsError && hasBankDetails(settings);
+  const detailsReady = Boolean(
+    form.fullName.trim() &&
+      form.phone.trim() &&
+      form.address.trim() &&
+      form.city,
+  );
+  const receiptReady = Boolean(receiptFile || receiptPath);
   const checkoutReady =
-    settingsLoaded &&
-    !settingsError &&
-    hasBankDetails(settings) &&
-    total !== null;
+    settingsReady &&
+    visibleItems.length > 0 &&
+    Boolean(selectedZone) &&
+    detailsReady &&
+    receiptReady;
   const updateForm = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) =>
     setForm((current) => ({
       ...current,
       [event.target.name]: event.target.value,
     }));
+
+  const handleCityChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const city = event.target.value as "" | DeliveryCity;
+    setForm((current) => ({ ...current, city, zoneId: "" }));
+  };
 
   const handleFile = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -103,7 +138,7 @@ export default function Checkout() {
   }, [previewUrl]);
 
   const submit = async () => {
-    if (!checkoutReady) {
+    if (!settingsReady) {
       setError(settingsError || "Store payment settings are unavailable.");
       return;
     }
@@ -111,16 +146,18 @@ export default function Checkout() {
       setError("Your bag is empty.");
       return;
     }
-    if (
-      !form.fullName.trim() ||
-      !form.phone.trim() ||
-      !form.address.trim() ||
-      !form.city.trim() ||
-      !form.state.trim()
-    ) {
+    if (!selectedZone) {
+      setError("Please select a valid delivery zone.");
+      return;
+    }
+    if (!detailsReady) {
       setError(
-        "Please complete your full name, phone, address, city, and state.",
+        "Please complete your full name, phone number, city, and delivery address.",
       );
+      return;
+    }
+    if (total === null) {
+      setError("Delivery could not be calculated for the selected zone.");
       return;
     }
     if (!receiptFile && !receiptPath) {
@@ -132,7 +169,7 @@ export default function Checkout() {
     try {
       let uploadedPath = receiptPath;
       if (!uploadedPath && receiptFile) {
-        uploadedPath = await uploadReceipt(receiptFile, "default-store");
+        uploadedPath = await uploadReceipt(receiptFile, storeSlug);
         setReceiptPath(uploadedPath);
       }
       if (!uploadedPath)
@@ -147,22 +184,22 @@ export default function Checkout() {
         })),
         total,
         shippingAddress: {
-          ...form,
           fullName: form.fullName.trim(),
           phone: form.phone.trim(),
           address: form.address.trim(),
-          city: form.city.trim(),
-          state: form.state.trim(),
+          city: form.city,
+          state: form.city ? CITY_STATES[form.city] : "",
           instagramHandle: form.instagramHandle.trim() || undefined,
           email: form.email.trim() || undefined,
           address2: form.address2.trim() || undefined,
           landmark: form.landmark.trim() || undefined,
         },
         receiptPath: uploadedPath,
-        storeSlug: "default-store",
+        storeSlug,
+        deliveryZoneId: selectedZone.id,
       });
       setTrackingCode(code);
-      clearCart();
+      clearCart(storeSlug);
     } catch (submissionError) {
       setError(
         submissionError instanceof Error
@@ -187,13 +224,15 @@ export default function Checkout() {
           {trackingCode}
         </p>
         <a
-          href={`/track?order=${encodeURIComponent(trackingCode)}`}
+          href={`${storePath(storeSlug, "track")}?order=${encodeURIComponent(trackingCode)}`}
           className="inline-flex px-6 py-3 bg-primary text-on-primary rounded-full"
         >
           Track Order
         </a>
       </main>
     );
+
+  const noZones = zonesLoaded && zones.length === 0;
 
   return (
     <main className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop pt-24 md:pt-32 pb-32">
@@ -206,9 +245,11 @@ export default function Checkout() {
           className="mb-6 rounded-xl border border-error/30 bg-error/10 p-4 text-error"
         >
           {settingsError ||
-            (settingsLoaded && !hasBankDetails(settings)
-              ? "Checkout is temporarily unavailable because payment details have not been configured."
-              : "Store settings are loading. Checkout will be available when they are ready.")}
+            (noZones
+              ? "Delivery is not configured for this store yet."
+              : settingsLoaded && !hasBankDetails(settings)
+                ? "Checkout is temporarily unavailable because payment details have not been configured."
+                : "Store settings are loading. Checkout will be available when they are ready.")}
         </div>
       )}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
@@ -221,8 +262,6 @@ export default function Checkout() {
               {[
                 ["fullName", "Full name *"],
                 ["phone", "Phone number *"],
-                ["city", "City *"],
-                ["state", "State *"],
                 ["instagramHandle", "Instagram handle (optional)"],
                 ["email", "Email (optional)"],
                 ["address2", "Address line 2 (optional)"],
@@ -241,6 +280,45 @@ export default function Checkout() {
                   />
                 </label>
               ))}
+              <label className="space-y-2 text-sm text-on-surface-variant">
+                City *
+                <select
+                  name="city"
+                  value={form.city}
+                  onChange={handleCityChange}
+                  className="w-full min-h-11 p-3 bg-surface border border-outline rounded-lg text-primary"
+                >
+                  <option value="">Select city</option>
+                  {CITIES.map((city) => (
+                    <option key={city} value={city}>
+                      {city}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="space-y-2 text-sm text-on-surface-variant">
+                Delivery zone *
+                <select
+                  name="zoneId"
+                  value={form.zoneId}
+                  onChange={updateForm}
+                  disabled={!form.city || cityZones.length === 0}
+                  className="w-full min-h-11 p-3 bg-surface border border-outline rounded-lg text-primary disabled:opacity-60"
+                >
+                  <option value="">
+                    {form.city
+                      ? cityZones.length > 0
+                        ? "Select delivery zone"
+                        : "No zones for this city"
+                      : "Select a city first"}
+                  </option>
+                  {cityZones.map((zone) => (
+                    <option key={zone.id} value={zone.id}>
+                      {zone.name} — {formatNaira(zone.fee)}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
             <label className="block space-y-2 text-sm text-on-surface-variant mt-4">
               Delivery address *
@@ -252,6 +330,16 @@ export default function Checkout() {
                 className="w-full p-3 bg-surface border border-outline rounded-lg text-primary"
               />
             </label>
+            {selectedZone && (
+              <div className="mt-4 rounded-lg bg-surface p-4 text-sm space-y-1">
+                <p>Provider: {selectedZone.provider}</p>
+                <p>Delivery fee: {formatNaira(selectedZone.fee)}</p>
+                {selectedZone.estimate && (
+                  <p>Estimated delivery: {selectedZone.estimate}</p>
+                )}
+                {selectedZone.note && <p>{selectedZone.note}</p>}
+              </div>
+            )}
           </section>
           <section className="bg-surface-container-low rounded-xl p-6 border border-outline-variant/30">
             <h2 className="font-headline-sm text-headline-sm mb-5">
@@ -261,7 +349,7 @@ export default function Checkout() {
               Transfer{" "}
               {total === null ? "the displayed total" : formatNaira(total)} to:
             </p>
-            {checkoutReady ? (
+            {settingsReady ? (
               <div className="space-y-2 bg-surface p-4 rounded-lg">
                 <p>Bank: {settings.bank.bankName}</p>
                 <p>Account name: {settings.bank.accountName}</p>
@@ -315,7 +403,7 @@ export default function Checkout() {
               <span>Delivery</span>
               <span>
                 {deliveryFee === null
-                  ? "Unavailable"
+                  ? "Select a zone"
                   : formatNaira(deliveryFee)}
               </span>
             </div>

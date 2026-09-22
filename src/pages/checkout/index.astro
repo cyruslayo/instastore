@@ -1,6 +1,3 @@
 ---
-import Layout from '@/layouts/Layout.astro';
-import Checkout from '@/components/storefront/Checkout';
-export const prerender = true;
+return Astro.redirect(`/s/default-store/checkout${Astro.url.search}`);
 ---
-<Layout pathname="/checkout" title="Checkout | Your Store"><Checkout client:load /></Layout>

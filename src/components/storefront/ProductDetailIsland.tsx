@@ -5,7 +5,7 @@ import { formatNaira } from "@/lib/utils";
 import type { Product } from "@/lib/types";
 import ProductDescription from "@/components/storefront/ProductDescription";
 
-export default function ProductDetailIsland({ product }: { product: Product }) {
+export default function ProductDetailIsland({ product, storeSlug }: { product: Product; storeSlug: string }) {
   const [quantity, setQuantity] = useState(1);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [addedNotice, setAddedNotice] = useState(false);
@@ -13,7 +13,7 @@ export default function ProductDetailIsland({ product }: { product: Product }) {
 
   const handleAddToCart = () => {
     if (!available) return;
-    addItem({
+    addItem(storeSlug, {
       product_id: product.id,
       name: product.name,
       price: product.price,

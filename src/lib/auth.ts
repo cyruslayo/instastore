@@ -24,6 +24,7 @@ export interface AdminProfile {
   email: string | null;
   role: 'admin';
   store_id: string;
+  store_slug: string;
 }
 
 // Resolves the current authenticated merchant's profile plus their active
@@ -50,7 +51,7 @@ export async function getCurrentAdminProfile(): Promise<AdminProfile | null> {
 
     const { data: store, error: storeError } = await supabase
       .from('stores')
-      .select('status')
+      .select('status, slug')
       .eq('id', profile.store_id)
       .maybeSingle();
 
@@ -63,6 +64,7 @@ export async function getCurrentAdminProfile(): Promise<AdminProfile | null> {
       email: profile.email ?? null,
       role: 'admin',
       store_id: profile.store_id,
+      store_slug: store.slug,
     };
   } catch {
     return null;

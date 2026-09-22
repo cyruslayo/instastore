@@ -1,0 +1,27 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import StoreUnavailable from '@/components/storefront/StoreUnavailable.astro';
+import ProductDetailIsland from '@/components/storefront/ProductDetailIsland';
+import { getPublicStoreBySlug } from '@/lib/stores';
+import { getProductBySlug } from '@/lib/products';
+import { storePath } from '@/lib/storePaths';
+import type { Product, Store } from '@/lib/types';
+
+export const prerender = false;
+
+const storeSlug = String(Astro.params.store ?? '');
+const productSlug = String(Astro.params.slug ?? '');
+const store: Store | null = await getPublicStoreBySlug(storeSlug);
+if (!store) Astro.response.status = 404;
+
+let product: Product | null = null;
+if (store) {
+  try { product = await getProductBySlug(storeSlug, productSlug); } catch (error) { console.warn(`Unable to load product "${productSlug}":`, error); }
+}
+if (store && !product) return Astro.redirect(storePath(storeSlug, 'shop'));
+---
+{store && product ? (
+<Layout pathname={storePath(storeSlug, `product/${product.slug}`)} storeSlug={storeSlug} title={`${product.name} | ${store.name}`} description={product.description} image={product.image} siteName={store.name}><ProductDetailIsland client:load product={product} storeSlug={storeSlug} /></Layout>
+) : (
+  <StoreUnavailable storeSlug={storeSlug} />
+)}

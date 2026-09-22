@@ -1,0 +1,29 @@
+---
+import '@/styles/global.css';
+
+interface Props {
+  storeSlug?: string;
+}
+const { storeSlug } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Store unavailable</title>
+    <meta name="robots" content="noindex" />
+  </head>
+  <body class="bg-background text-on-background antialiased min-h-screen flex items-center justify-center px-margin-mobile">
+    <main class="max-w-md text-center">
+      <p class="font-label-sm text-label-sm uppercase tracking-widest text-secondary mb-stack-sm">Storefront</p>
+      <h1 class="font-headline-md text-headline-md text-primary mb-stack-md">Store unavailable</h1>
+      <p class="font-body-md text-body-md text-on-surface-variant">
+        {storeSlug
+          ? `The store "${storeSlug}" is not available right now.`
+          : 'This store is not available right now.'}
+      </p>
+    </main>
+  </body>
+</html>

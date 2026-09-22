@@ -1,6 +1,7 @@
 /** Canonical settings shared by the public storefront and admin. */
 import { getSupabase } from "./supabase";
 import { getCurrentAdminProfile } from "./auth";
+import { isValidStoreSlug, normalizeStoreSlug } from "./stores";
 
 export interface BankSettings {
   bankName: string;
@@ -102,19 +103,23 @@ function fromRow(
   );
 }
 
-function cacheSiteSettings(settings: SiteSettings): void {
+function settingsCacheKey(storeSlug?: string): string {
+  return storeSlug ? `${LOCAL_SITE_SETTINGS_KEY}:${storeSlug}` : LOCAL_SITE_SETTINGS_KEY;
+}
+
+function cacheSiteSettings(settings: SiteSettings, storeSlug?: string): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(LOCAL_SITE_SETTINGS_KEY, JSON.stringify(settings));
+    localStorage.setItem(settingsCacheKey(storeSlug), JSON.stringify(settings));
   } catch {
     /* Cache is optional. */
   }
 }
 
-export function getSiteSettings(): SiteSettings {
+export function getSiteSettings(storeSlug?: string): SiteSettings {
   if (typeof window !== "undefined") {
     try {
-      const stored = localStorage.getItem(LOCAL_SITE_SETTINGS_KEY);
+      const stored = localStorage.getItem(settingsCacheKey(storeSlug));
       if (stored) return normalise(JSON.parse(stored));
     } catch {
       /* Use safe defaults. */
@@ -123,15 +128,28 @@ export function getSiteSettings(): SiteSettings {
   return DEFAULT_SITE_SETTINGS;
 }
 
-export async function fetchLiveSiteSettings(): Promise<SiteSettings> {
+export async function fetchLiveSiteSettings(storeSlug?: string): Promise<SiteSettings> {
   if (!isSupabaseConfigured())
     throw new Error("Supabase is not configured for live site settings.");
-  const { data, error } = await getSupabase().rpc("get_storefront_settings");
-  if (error) throw error;
+  const normalizedSlug = storeSlug ? normalizeStoreSlug(storeSlug) : "";
+  let data: unknown;
+  if (normalizedSlug) {
+    if (!isValidStoreSlug(normalizedSlug))
+      throw new Error("Invalid store slug.");
+    const result = await getSupabase().rpc("get_storefront_settings_by_slug", {
+      p_slug: normalizedSlug,
+    });
+    if (result.error) throw result.error;
+    data = result.data;
+  } else {
+    const result = await getSupabase().rpc("get_storefront_settings");
+    if (result.error) throw result.error;
+    data = result.data;
+  }
   const settings = fromRow(
     (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null,
   );
-  cacheSiteSettings(settings);
+  cacheSiteSettings(settings, normalizedSlug || undefined);
   return settings;
 }
 

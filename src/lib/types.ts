@@ -24,6 +24,22 @@ export interface Product {
   updated_at?: string;
 }
 
+export type DeliveryCity = 'Abuja' | 'Lagos';
+
+export interface DeliveryZone {
+  id: string;
+  store_id: string;
+  city: DeliveryCity;
+  name: string;
+  provider: string;
+  fee: number;
+  estimate?: string | null;
+  note?: string | null;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface OrderItem {
   product_id: string;
   name: string;
@@ -63,6 +79,11 @@ export interface Order {
   shipping_address: ShippingAddress;
   receipt_path: string;
   inventory_restocked: boolean;
+  delivery_zone_id?: string | null;
+  delivery_city?: string | null;
+  delivery_zone_name?: string | null;
+  delivery_provider?: string | null;
+  delivery_estimate?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -75,6 +96,10 @@ export interface CustomerOrderStatus {
   total: number;
   status: OrderStatus;
   shipping_address: ShippingAddress;
+  delivery_city?: string | null;
+  delivery_zone_name?: string | null;
+  delivery_provider?: string | null;
+  delivery_estimate?: string | null;
   created_at: string;
   updated_at: string;
 }

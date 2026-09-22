@@ -1,7 +1,7 @@
 ---
 import Layout from '@/layouts/Layout.astro';
 import StoreUnavailable from '@/components/storefront/StoreUnavailable.astro';
-import ProductCard from '@/components/storefront/ProductCard.astro';
+import StoreCatalog from '@/components/storefront/StoreCatalog';
 import { getPublicStoreBySlug } from '@/lib/stores';
 import { getActiveProducts } from '@/lib/products';
 import { fetchLiveSiteSettings, DEFAULT_SITE_SETTINGS } from '@/lib/siteSettings';
@@ -24,7 +24,7 @@ const storeName = settings.storeName.trim() || 'Your Store';
 ---
 {store ? (
 <Layout pathname={storePath(storeSlug, 'shop')} storeSlug={storeSlug} title={`Shop | ${storeName}`} description={`Browse currently available products from ${storeName}.`} siteName={storeName}>
-  <main class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop pb-section-gap pt-24 md:pt-32"><section class="py-section-gap text-center max-w-2xl mx-auto"><h1 class="font-headline-md text-headline-md text-primary mb-stack-md">Shop</h1><p class="font-body-md text-body-md text-on-surface-variant">Browse what is currently available.</p></section><div class="flex items-center justify-between mb-8 border-b border-outline-variant/30 pb-4"><h2 class="font-headline-sm text-headline-sm text-primary">Available Products</h2><span class="font-body-md text-body-md text-on-surface-variant">{products.length} products</span></div>{products.length === 0 ? <p class="py-20 text-center font-body-md text-body-md text-on-surface-variant">There are no products available right now. Please check back soon.</p> : <div class="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-gutter items-start">{products.map((product) => <ProductCard product={product} storeSlug={storeSlug} />)}</div>}</main>
+  <main class="max-w-container-max mx-auto px-margin-mobile pb-section-gap pt-24 md:px-margin-desktop md:pt-32"><section class="mx-auto max-w-2xl py-section-gap text-center"><h1 class="mb-stack-md font-headline-md text-headline-md text-primary">Shop</h1><p class="font-body-md text-body-md text-on-surface-variant">Browse what is currently available.</p></section><StoreCatalog client:load storeSlug={storeSlug} products={products} /></main>
 </Layout>
 ) : (
   <StoreUnavailable storeSlug={storeSlug} />

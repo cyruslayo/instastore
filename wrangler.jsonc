@@ -1,0 +1,9 @@
+{
+  "name": "instastore",
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "compatibility_date": "2026-09-22",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS"
+  }
+}

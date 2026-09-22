@@ -9,7 +9,7 @@ A storefront and order-management product for Instagram-first merchants.
 - TypeScript — strict mode
 - Tailwind CSS — design tokens defined in `src/styles/global.css`
 - Supabase — database, admin authentication, and storage
-- Netlify — serverless deployment via `@astrojs/netlify`
+- Cloudflare Workers — hosting and compute via `@astrojs/cloudflare`
 - pnpm — package manager
 
 ## Run Locally
@@ -48,7 +48,14 @@ A storefront and order-management product for Instagram-first merchants.
 
 ## Configuration
 
-Copy `.env.example` to `.env` and set `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` to your Supabase project values.
+Copy `.env.example` to `.env` and set `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` to your Supabase project values. These are public (non-secret) values that Astro inlines into the build at build time.
+
+## Deploy
+
+1. Authenticate Wrangler once: `pnpm wrangler login`
+2. Build and deploy to Cloudflare Workers: `pnpm deploy`
+
+`pnpm deploy` runs `astro build` then `wrangler deploy`, uploading the prebuilt Worker. The two `PUBLIC_*` variables must be present in `.env` when you build. No Supabase service-role key or other secrets are required.
 
 ## Database Setup
 

@@ -4,7 +4,7 @@
 InstaStore — a storefront and order-management product for Instagram-first merchants.
 
 - Built with Astro 7 (`.astro` pages + React 19 islands hydrated via `client:load`), TypeScript (strict).
-- Server-rendered (`output: 'server'`) with the `@astrojs/netlify` adapter; some pages are static shells (`prerender = true`) and others render on request (`prerender = false`).
+- Server-rendered (`output: 'server'`) with the `@astrojs/cloudflare` adapter (Cloudflare Workers); some pages are static shells (`prerender = true`) and others render on request (`prerender = false`).
 - Styled with Tailwind CSS 4 using `@theme` tokens in `src/styles/global.css` (no `tailwind.config`).
 - Backed by Supabase: DB, Auth, and Storage initialized in `src/lib/supabase.ts`.
 - Path alias `@/*` maps to `src/*` (see `tsconfig.json`).
@@ -90,6 +90,8 @@ InstaStore — a storefront and order-management product for Instagram-first mer
 ## Development Rules
 - Never modify an already applied migration. Add a new numbered migration.
 - Coding agents must not implement future roadmap features unless the task explicitly requests them.
+- Cloudflare currently provides hosting and compute only; Supabase provides PostgreSQL, Auth, and Storage.
+- Coding agents must not introduce other Cloudflare data services (D1, R2, KV, Durable Objects, another database, or another authentication system) unless an active roadmap task explicitly requires them.
 
 ## Common Workflows
 - `pnpm dev` — start the local dev server.

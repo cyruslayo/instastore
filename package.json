@@ -8,6 +8,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
+    "deploy": "astro build && wrangler deploy",
     "check": "astro check",
     "clean": "node -e \"fs.rmSync('dist',{recursive:true,force:true});fs.rmSync('.astro',{recursive:true,force:true})\"",
     "ladle": "ladle",
@@ -16,7 +17,7 @@
     "ladle:preview": "ladle preview"
   },
   "dependencies": {
-    "@astrojs/netlify": "^8.2.5",
+    "@astrojs/cloudflare": "14.3.2",
     "@nanostores/react": "^1.1.0",
     "@supabase/supabase-js": "^2.86.2",
     "clsx": "^2.1.1",
@@ -35,8 +36,9 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "astro": "^7.2.1",
+    "astro": "^7.3.3",
     "tailwindcss": "^4.3.3",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "wrangler": "4.136.2"
   }
 }

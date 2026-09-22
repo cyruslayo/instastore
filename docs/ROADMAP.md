@@ -8,8 +8,8 @@ and independently reviewable.
 | Status   | ID   | Task                              |
 | -------- | ---- | --------------------------------- |
 | Complete | T00  | Repository baseline               |
-| Next     | T00B | Cloudflare hosting migration      |
-| Pending  | T01A | Tenant data foundation            |
+| Complete | T00B | Cloudflare hosting migration      |
+| Next     | T01A | Tenant data foundation            |
 | Pending  | T01B | Tenant security and commerce RPCs |
 | Pending  | T01C | Tenant-aware admin and storage    |
 | Pending  | T02  | Store-scoped storefront           |

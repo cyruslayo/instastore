@@ -9,12 +9,12 @@ coverage/
 .env*
 !.env.example
 
-# Local Netlify folder
-.netlify
-
 # Ladle build output
 build-ladle/
 .commandcode/
+
+# Cloudflare Wrangler local state
+.wrangler/
 
 # Local working artifacts
 .scratch/

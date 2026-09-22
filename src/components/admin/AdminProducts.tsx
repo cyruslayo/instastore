@@ -4,6 +4,7 @@ import ProductFormModal from "@/components/admin/ProductFormModal";
 import { formatNaira } from "@/lib/utils";
 import { deleteManagedProductImage } from "@/lib/productImages";
 import type { Product } from "@/lib/types";
+import { LOW_STOCK_THRESHOLD } from "@/lib/adminMetrics";
 
 export default function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -92,6 +93,14 @@ export default function AdminProducts() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [lowStockOnly, setLowStockOnly] = useState(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('stock') === 'low');
+  const setLowStockFilter = (enabled: boolean) => {
+    setLowStockOnly(enabled);
+    const url = new URL(window.location.href);
+    if (enabled) url.searchParams.set('stock', 'low');
+    else url.searchParams.delete('stock');
+    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+  };
 
   const filteredProducts = products.filter((p) => {
     const matchesSearch =
@@ -99,7 +108,8 @@ export default function AdminProducts() {
       p.category?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory =
       selectedCategory === "All" || p.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchesLowStock = !lowStockOnly || (p.is_active && p.inventory <= LOW_STOCK_THRESHOLD);
+    return matchesSearch && matchesCategory && matchesLowStock;
   });
 
   return (
@@ -140,6 +150,8 @@ export default function AdminProducts() {
             className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant/60 focus:outline-none focus:border-primary text-primary placeholder:text-on-surface-variant/60"
           />
         </div>
+        <button type="button" aria-pressed={lowStockOnly} onClick={() => setLowStockFilter(!lowStockOnly)} className={`px-3 py-2 rounded-xl text-xs font-mono font-bold whitespace-nowrap ${lowStockOnly ? 'bg-primary text-on-primary' : 'bg-surface-container-low text-on-surface-variant'}`}>Low stock (≤ {LOW_STOCK_THRESHOLD})</button>
+        {lowStockOnly && <button type="button" onClick={() => setLowStockFilter(false)} className="text-xs font-bold text-primary underline underline-offset-4">Clear low-stock filter</button>}
         <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar shrink-0">
           <button
             type="button"

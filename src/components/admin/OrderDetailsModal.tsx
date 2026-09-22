@@ -2,12 +2,14 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { formatNaira } from "@/lib/utils";
+import { nextOrderStatuses, ORDER_ACTION_LABELS } from "@/lib/orderWorkflow";
+import type { OrderStatus } from "@/lib/types";
 
 interface OrderDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   order: any;
-  onSaved: () => void;
+  onSaved: () => void | Promise<void>;
 }
 
 export default function OrderDetailsModal({
@@ -17,7 +19,7 @@ export default function OrderDetailsModal({
   onSaved,
 }: OrderDetailsModalProps) {
   const [isSaving, setIsSaving] = useState(false);
-  const [nextStatus, setNextStatus] = useState<string | null>(null);
+  const [nextStatus, setNextStatus] = useState<OrderStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
   const [receiptLoading, setReceiptLoading] = useState(false);
@@ -88,14 +90,7 @@ export default function OrderDetailsModal({
       )
     : Math.max(Number(order.total || 0) - shippingFee, 0);
 
-  const statusOptions: string[] =
-    order.status === "Pending Verification"
-      ? ["Processing", "Cancelled"]
-      : order.status === "Processing"
-        ? ["Shipped", "Cancelled"]
-        : order.status === "Shipped"
-          ? ["Fulfilled"]
-          : [];
+  const statusOptions = nextOrderStatuses(order.status);
 
   const handleUpdateStatus = async () => {
     setError(null);
@@ -104,7 +99,7 @@ export default function OrderDetailsModal({
       if (!nextStatus) return;
       const { setOrderStatus } = await import("@/lib/orders");
       await setOrderStatus(order.id, nextStatus);
-      onSaved();
+      await onSaved();
       onClose();
     } catch (err: any) {
       console.error("Error updating order: ", err);
@@ -307,9 +302,7 @@ export default function OrderDetailsModal({
 
           {receiptPath && (
             <div className="space-y-3 pt-4 border-t border-outline-variant/50">
-              <p className="font-mono text-xs uppercase tracking-wider text-primary font-bold">
-                Bank Payment Receipt
-              </p>
+              <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-mono text-xs uppercase tracking-wider text-primary font-bold">Bank Payment Receipt</p>{order.status === "Pending Verification" && <span className="rounded-full bg-tertiary-container px-2.5 py-1 text-xs font-bold text-on-tertiary-container">Review receipt, then verify payment</span>}</div>
               <div className="bg-surface-container-low border border-outline-variant/60 rounded-xl p-3 flex flex-col items-center">
                 {receiptLoading && (
                   <p className="py-8 text-sm text-on-surface-variant">
@@ -368,7 +361,7 @@ export default function OrderDetailsModal({
                       : "bg-surface border-outline-variant/70 text-on-surface hover:bg-surface-container-low"
                   }`}
                 >
-                  {s}
+                  {ORDER_ACTION_LABELS[s]}
                 </button>
               ))}
             </div>
@@ -389,7 +382,7 @@ export default function OrderDetailsModal({
             disabled={isSaving || nextStatus === null}
             className="px-6 py-2.5 rounded-xl font-label-sm text-xs uppercase tracking-wider font-bold bg-primary text-on-primary hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-xs"
           >
-            {isSaving ? "Updating..." : "Save Changes"}
+            {isSaving ? "Updating..." : nextStatus ? ORDER_ACTION_LABELS[nextStatus] : "Choose an action"}
           </button>
         </div>
       </div>

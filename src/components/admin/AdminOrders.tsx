@@ -2,6 +2,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import OrderDetailsModal from '@/components/admin/OrderDetailsModal';
 import { formatNaira } from '@/lib/utils';
+import { ORDER_STATUSES, validatedStatusFilter } from '@/lib/orderWorkflow';
+import type { OrderStatus } from '@/lib/types';
+type OrderStatusFilter = 'All' | OrderStatus;
+
+function initialStatusFilter(): OrderStatusFilter {
+  if (typeof window === 'undefined') return 'All';
+  return validatedStatusFilter(new URLSearchParams(window.location.search).get('status'));
+}
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -38,7 +46,7 @@ export default function AdminOrders() {
     fetchOrders();
   }, [fetchOrders]);
 
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState<OrderStatusFilter>(initialStatusFilter);
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredOrders = orders.filter((order) => {
@@ -50,6 +58,10 @@ export default function AdminOrders() {
       (order.customer_instagram && order.customer_instagram.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesStatus && matchesSearch;
   });
+  const statusCounts = orders.reduce<Record<string, number>>((counts, order) => {
+    counts[order.status] = (counts[order.status] || 0) + 1;
+    return counts;
+  }, {});
 
   return (
     <div className="space-y-6 md:space-y-8">
@@ -85,7 +97,7 @@ export default function AdminOrders() {
 
         {/* Status Pills */}
         <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-1">
-          {['All', 'Pending Verification', 'Processing', 'Shipped', 'Fulfilled', 'Cancelled'].map((s) => (
+          {(['All', ...ORDER_STATUSES] as OrderStatusFilter[]).map((s) => (
             <button
               key={s}
               type="button"
@@ -96,7 +108,7 @@ export default function AdminOrders() {
                   : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'
               }`}
             >
-              {s}
+              {s}{s === 'All' ? ` (${orders.length})` : ` (${statusCounts[s] || 0})`}
             </button>
           ))}
         </div>

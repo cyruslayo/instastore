@@ -9,10 +9,11 @@ export default function ProductCard({
   storeSlug: string;
 }) {
   const onSale = product.compare_at_price != null && product.compare_at_price > product.price;
+  const image = [product.image, ...(product.gallery_images || [])].find((candidate) => Boolean(candidate?.trim()));
   return (
     <a href={`/s/${storeSlug}/product/${product.slug}`} className="group block cursor-pointer">
       <div className="relative mb-stack-md aspect-[3/4] overflow-hidden rounded-xl bg-surface-container-low botanical-shadow transition-transform duration-500 group-hover:-translate-y-1">
-        {product.image ? <img src={product.image} alt={product.name} referrerPolicy="no-referrer" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center bg-surface-container-highest text-on-surface-variant">No Image</div>}
+        {image ? <img src={image} alt={product.name} referrerPolicy="no-referrer" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center bg-surface-container-highest text-on-surface-variant">No Image</div>}
         {onSale && <span className="absolute left-3 top-3 rounded-full bg-store-primary px-3 py-1 font-label-sm text-xs font-bold text-store-on-primary">Sale</span>}
         {product.inventory < 1 && <span className="absolute bottom-3 left-3 rounded-full bg-surface px-3 py-1 font-label-sm text-xs font-bold text-on-surface">Sold out</span>}
       </div>

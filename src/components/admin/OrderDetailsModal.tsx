@@ -224,6 +224,23 @@ export default function OrderDetailsModal({
             )}
           </div>
 
+          {(order.delivery_city ||
+            order.delivery_zone_name ||
+            order.delivery_provider ||
+            order.delivery_estimate) && (
+            <div className="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/60 space-y-1">
+              <p className="font-mono text-[10px] uppercase tracking-wider text-secondary font-bold">
+                Delivery
+              </p>
+              <div className="text-xs sm:text-sm text-on-surface space-y-0.5">
+                {order.delivery_city && <p>City: {order.delivery_city}</p>}
+                {order.delivery_zone_name && <p>Zone: {order.delivery_zone_name}</p>}
+                {order.delivery_provider && <p>Provider: {order.delivery_provider}</p>}
+                {order.delivery_estimate && <p>Estimate: {order.delivery_estimate}</p>}
+              </div>
+            </div>
+          )}
+
           {order.items && order.items.length > 0 && (
             <div className="space-y-3 pt-4 border-t border-outline-variant/50">
               <p className="font-mono text-xs uppercase tracking-wider text-primary font-bold">

@@ -134,16 +134,9 @@ export default function AdminSiteContent() {
       )}
       {activeTab === "commerce" && (
         <section className="bg-surface rounded-2xl border border-outline-variant/60 p-6 sm:p-8 botanical-shadow max-w-3xl space-y-5">
-          <Field
-            label="Delivery fee (NGN)"
-            value={String(settings.deliveryFee)}
-            onChange={(value) => update("deliveryFee", Number(value))}
-            inputClass={inputClass}
-            type="number"
-            min="0"
-            step="0.01"
-            required
-          />
+          <p className="font-body-sm text-xs text-on-surface-variant">
+            Delivery pricing is managed under Delivery zones.
+          </p>
           <label className="block space-y-1.5">
             <span className="font-label-sm text-xs uppercase tracking-wider text-primary font-bold">
               Currency

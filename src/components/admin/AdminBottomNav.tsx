@@ -7,6 +7,7 @@ import {
   Menu,
   X,
   Sliders,
+  Truck,
   LogOut,
   ChevronRight,
 } from "lucide-react";
@@ -44,6 +45,13 @@ export default function AdminBottomNav({ pathname }: AdminBottomNavProps) {
   ];
 
   const secondaryItems = [
+    {
+      href: "/admin/delivery",
+      label: "Delivery",
+      description: "Delivery zones and fees",
+      icon: Truck,
+      active: pathname.startsWith("/admin/delivery"),
+    },
     {
       href: "/admin/content",
       label: "Store Settings",

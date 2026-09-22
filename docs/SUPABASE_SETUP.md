@@ -28,6 +28,7 @@ This is the fresh-install path for a **new, empty Supabase project**. Never run 
    - `0009_tenant_storage_policies.sql`
    - `0010_storefront_tenancy_and_delivery_zones.sql`
    - `0011_trusted_delivery_checkout.sql`
+   - `0012_delivery_zone_ordering.sql`
 7. Create the first user in Supabase Auth (email/password or the configured Auth provider).
 8. Copy the Auth user's UUID and insert the matching admin profile for the existing `default-store` in the SQL editor:
 
@@ -72,7 +73,7 @@ Public storefronts are live at `/s/<store-slug>` (for example `/s/default-store`
 
 ## Delivery zones
 
-Delivery pricing is per store and per city. Only `Abuja` and `Lagos` are supported. Migrations never insert delivery zones; the merchant or operator must enter real prices (through `/admin/delivery`, or directly with SQL before a merchant exists):
+Delivery pricing is per store and per city. Only `Abuja` and `Lagos` are supported. Zone names are unique within a store and city (`store_id + city + lower(btrim(name))`), so the same name may exist in Abuja and Lagos. Public and merchant zone lists order by `city`, then `sort_order`, then `name`; `sort_order` defaults to `0`. Migrations never insert delivery zones; the merchant or operator must enter real prices (through `/admin/delivery`, or directly with SQL before a merchant exists):
 
 ```sql
 insert into public.delivery_zones (store_id, city, name, provider, fee, estimate, note)
@@ -136,7 +137,7 @@ select
   has_function_privilege('authenticated', 'public.set_order_status(uuid,text)', 'EXECUTE') as authenticated_set_order_status;
 ```
 
-Expected security conclusions: anon can select active `default-store` products and execute `get_storefront_settings`, `create_store_order`, and `get_order_status`; anon cannot execute `set_order_status`, read/write orders, modify products, or modify settings. Authenticated merchants can manage only their own store's products/settings/orders and execute `set_order_status`. Receipt uploads are store-scoped; receipts are private and only the owning merchant can read them (plus legacy receipts for the `default-store` merchant).
+Expected security conclusions: anon can select active products and active delivery zones for any active store, and execute `get_storefront_settings`, `get_storefront_settings_by_slug`, `create_store_order`, and `get_order_status`; anon cannot execute `set_order_status`, read/write orders, modify products, or modify settings. Draft products and products belonging to suspended stores are not public. Authenticated merchants can manage only their own store's products/settings/orders/delivery zones and execute `set_order_status`. Receipt uploads are store-scoped to an active store; receipts are private and only the owning merchant can read them (plus legacy receipts for the `default-store` merchant).
 
 For the order-status privilege check, expect `anon_set_order_status = false` and `authenticated_set_order_status = true`.
 
@@ -242,3 +243,72 @@ Behavioral checks (impersonate `anon` unless noted):
 - Changing a zone's fee afterwards does not change an existing order.
 - Stock locking still rejects an order that exceeds inventory; cancelling an order restores stock exactly once.
 - `get_order_status()` returns nothing when the store slug is wrong, and requires code + phone + store slug.
+
+## B2V runtime verification record
+
+These results were produced on a **disposable local PostgreSQL 18.4 cluster**, created with
+`initdb` on a private port with trust auth and a minimal set of Supabase-compatible shims
+(`anon`/`authenticated`/`service_role` roles, `auth.users` + `auth.uid()`, `storage.objects` +
+`storage.allow_only_operation()`, and `pgcrypto` in the `extensions` schema). It is **not a real
+Supabase stack**: GoTrue, PostgREST, and the Storage HTTP API are absent, so only the SQL, RLS, and
+RPC layers are exercised. Nothing was run against the configured shared project, which is left
+untouched.
+
+### Tests actually run (all passed)
+
+- **Fresh migration chain** — `0001` through `0012` applied in filename order to an empty database
+  with no errors. This is the first time `0007`–`0012` were executed in a real PostgreSQL engine.
+- **Product slug constraints** — a duplicate `shared-product` slug inside one store is rejected;
+  the same slug in two different stores is accepted.
+- **Public product reads (anon)** — active products for both stores are readable; drafts are not;
+  a suspended store's products and zones are hidden; the store is reactivated afterwards.
+- **Merchant product isolation** — each merchant reads its own products (including drafts), cannot
+  read the other store's drafts, cannot update or delete the other store's products, and cannot
+  insert a product carrying the other store's `store_id`.
+- **Delivery zone rules** — a duplicate zone name in the same store and city is rejected (including
+  a case/whitespace variant), and the same name is accepted across cities and across stores.
+- **Delivery zone RLS** — anon reads only active zones; a merchant can create/update/delete its own
+  zones but cannot read, update, delete, or insert into the other store's zones.
+- **Receipt policies** — anon uploads succeed only under an active store namespace; unknown and
+  suspended namespaces are rejected; anon cannot list or download receipts (except the narrow
+  upload-completion metadata path); each merchant reads only its own store's receipts.
+- **Product-image policies** — a merchant uploads only into its own `products/<store-id>/` folder,
+  cannot upload into or delete the other store's folder, and cannot read the other store's images.
+- **Store A checkout** — order created with `store_id` = Store A, inventory decremented, `subtotal`
+  from database prices, `shipping_fee` from the zone fee, `total = subtotal + shipping_fee`, and
+  `delivery_zone_id`/`delivery_city`/`delivery_zone_name`/`delivery_provider`/`delivery_estimate`
+  matching the selected zone.
+- **Trusted pricing** — a manipulated product total and a manipulated delivery total are rejected;
+  the RPC exposes no client-supplied delivery-metadata parameters.
+- **Cross-store / invalid checkout** — rejected for a cross-store product, a cross-store zone id, a
+  cross-store receipt namespace, an unknown store, a suspended store, a missing zone, and an
+  inactive zone.
+- **Stock protection** — an order above available stock is rejected. Two simultaneous sessions each
+  ordering 4 units against 5 in stock: exactly one succeeded and the other failed with
+  "Insufficient inventory", leaving stock at 1.
+- **Receipt idempotency** — the same receipt and phone return the existing tracking code without a
+  second inventory decrement; the same receipt with a different phone is rejected.
+- **Order status** — Merchant A completes `Pending Verification → Processing → Shipped → Fulfilled`;
+  an invalid transition from a terminal state is rejected; Merchant B cannot change Store A's order;
+  cancellation restores stock exactly once and repeating it does not double-restock.
+- **Store-scoped tracking** — `get_order_status()` returns the order only for the correct store slug
+  and phone; another store slug or a wrong phone returns nothing.
+- **HTTP routing (dev server, dummy Supabase env)** — `/`, `/shop`, `/cart`, `/checkout`, `/track`,
+  `/product/<slug>`, `/oils` all redirect to `/s/default-store/...` and preserve query strings
+  (e.g. `/track?order=ORD-123`, `/oils?x=1`); `/s/store-a` returns 404 with a "Store unavailable"
+  page and does not leak `default-store` content.
+
+### Tests expected but not run
+
+- **Application-level Supabase behavior** — storefront rendering, admin flows, and checkout against
+  real data require GoTrue/PostgREST/Storage, which the disposable cluster does not provide. The
+  store-scoped application smoke tests in `/s/<store>/...` were therefore not run against live data.
+- **Storage HTTP semantics** — signed URLs, bucket visibility, and upload size/MIME enforcement are
+  platform behaviors, not covered by the SQL-level policy checks.
+- **Public product-image URL serving** — served by the public bucket outside RLS; asserted only that
+  the RLS layer exposes no anon select for it.
+
+To re-run: create a `initdb` cluster on a spare port with the shims above, apply migrations
+`0001`–`0012` in order, seed two stores with products, delivery zones, and receipts, then run the
+behavioral checks listed under "Storefront and delivery verification". All of the above passed on
+the disposable cluster; none of it has been run against the configured shared project.

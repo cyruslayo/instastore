@@ -1,3 +1,39 @@
 ---
-return Astro.redirect(`/s/default-store${Astro.url.search}`);
+import PlatformLayout from '@/layouts/PlatformLayout.astro';
+
+const operatorName = import.meta.env.PUBLIC_OPERATOR_NAME?.trim() || 'InstaStore';
+const supportEmail = import.meta.env.PUBLIC_SUPPORT_EMAIL?.trim();
+const whatsappDigits = (import.meta.env.PUBLIC_SUPPORT_WHATSAPP?.trim() || '').replace(/\D/g, '');
+const whatsappUrl = whatsappDigits ? `https://wa.me/${whatsappDigits}` : undefined;
+const hasOnboardingContact = Boolean(supportEmail || whatsappUrl);
+const description = 'Your Instagram shop, organized into a real store. Product catalog, checkout, delivery setup and order management for businesses in Abuja and Lagos.';
 ---
+
+<PlatformLayout title={`${operatorName} — Your Instagram shop, organized`} description={description}>
+  <div class="mx-auto max-w-5xl">
+    <section class="grid gap-10 py-8 md:grid-cols-[1.3fr_0.7fr] md:items-center md:py-16" aria-labelledby="platform-heading">
+      <div>
+        <p class="mb-stack-md font-label-sm text-label-sm font-bold uppercase tracking-[0.18em] text-secondary">Commerce for Instagram-first businesses</p>
+        <h1 id="platform-heading" class="max-w-4xl font-display-lg-mobile text-display-lg-mobile text-primary md:font-display-lg md:text-display-xl">Your Instagram shop, organized into a real store.</h1>
+        <p class="mt-stack-lg max-w-2xl font-body-lg text-body-lg text-on-surface-variant">Give customers one clear place to browse your products, place an order and follow its progress—while you manage the catalog and orders in one place.</p>
+        {hasOnboardingContact && <div class="mt-stack-lg flex flex-wrap gap-3">
+          {supportEmail && <a href={`mailto:${supportEmail}?subject=${encodeURIComponent('Set up my InstaStore')}`} class="touch-target inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 font-semibold text-on-primary hover:opacity-90">Get your store set up</a>}
+          {whatsappUrl && <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" class="touch-target inline-flex items-center justify-center rounded-full border border-outline px-6 py-3 font-semibold text-primary hover:bg-surface-container-low">Message us on WhatsApp</a>}
+        </div>}
+        <p class="mt-stack-md text-sm text-on-surface-variant">Assisted setup for an initial focus on Abuja and Lagos.</p>
+      </div>
+      <aside aria-label="Storefront flow" class="rounded-2xl border border-outline-variant/60 bg-surface p-6 botanical-shadow md:p-8">
+        <p class="font-label-sm text-label-sm font-bold uppercase tracking-widest text-secondary">A simpler path to an order</p>
+        <ol class="mt-stack-lg space-y-5">
+          {['Catalog, search and branded storefront', 'Cart and bank-transfer checkout', 'Delivery setup and receipt review', 'Order confirmation and customer tracking'].map((step, index) => <li class="flex gap-4"><span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-on-primary">{index + 1}</span><span class="pt-1 font-semibold text-primary">{step}</span></li>)}
+        </ol>
+      </aside>
+    </section>
+    <section class="border-t border-outline-variant/50 py-stack-lg" aria-labelledby="merchant-tools-heading">
+      <h2 id="merchant-tools-heading" class="font-headline-md text-headline-md text-primary">Everything needed to run the storefront</h2>
+      <ul class="mt-stack-md grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {['Product catalog and search', 'Branded storefront', 'Customer cart', 'Bank-transfer checkout', 'Abuja and Lagos delivery configuration', 'Payment receipt verification', 'Order tracking'].map((feature) => <li class="rounded-xl border border-outline-variant/50 bg-surface px-4 py-4 text-sm font-semibold text-on-surface">{feature}</li>)}
+      </ul>
+    </section>
+  </div>
+</PlatformLayout>

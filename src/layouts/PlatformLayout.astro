@@ -1,0 +1,62 @@
+---
+import '@/styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+const configuredSiteUrl = import.meta.env.PUBLIC_SITE_URL?.trim();
+const canonicalOrigin = configuredSiteUrl || Astro.url.origin;
+const operatorName = import.meta.env.PUBLIC_OPERATOR_NAME?.trim() || 'InstaStore';
+const supportEmail = import.meta.env.PUBLIC_SUPPORT_EMAIL?.trim();
+const rawWhatsapp = import.meta.env.PUBLIC_SUPPORT_WHATSAPP?.trim() || '';
+const whatsappDigits = rawWhatsapp.replace(/\D/g, '');
+const whatsappUrl = whatsappDigits ? `https://wa.me/${whatsappDigits}` : undefined;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500;6..96,600;6..96,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="canonical" href={new URL(Astro.url.pathname, canonicalOrigin).toString()} />
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={new URL(Astro.url.pathname, canonicalOrigin).toString()} />
+    <title>{title}</title>
+  </head>
+  <body class="min-h-screen bg-background text-on-background antialiased">
+    <a href="#main-content" class="visually-hidden skip-link">Skip to content</a>
+    <header class="border-b border-outline-variant/50 bg-surface">
+      <nav aria-label="Main navigation" class="mx-auto flex max-w-container-max items-center justify-between gap-4 px-margin-mobile py-5 md:px-margin-desktop">
+        <a href="/" class="font-headline-sm text-headline-sm font-bold text-primary">{operatorName}</a>
+        <div class="flex flex-wrap items-center gap-4 text-sm font-semibold">
+          <a href="/privacy" class="underline-offset-4 hover:underline">Privacy</a>
+          <a href="/terms" class="underline-offset-4 hover:underline">Terms</a>
+        </div>
+      </nav>
+    </header>
+    <main id="main-content" tabindex="-1" class="mx-auto min-h-[70dvh] w-full max-w-container-max px-margin-mobile py-section-gap md:px-margin-desktop">
+      <slot />
+    </main>
+    <footer class="border-t border-outline-variant/50 bg-surface">
+      <div class="mx-auto flex max-w-container-max flex-wrap items-start justify-between gap-6 px-margin-mobile py-stack-lg text-sm text-on-surface-variant md:px-margin-desktop">
+        <p>Commerce software for Instagram-first businesses.</p>
+        <div class="flex flex-wrap gap-5">
+          <a href="/privacy" class="underline underline-offset-4">Privacy notice</a>
+          <a href="/terms" class="underline underline-offset-4">Terms</a>
+          {supportEmail && <a href={`mailto:${supportEmail}`} class="underline underline-offset-4">Contact {operatorName}</a>}
+          {whatsappUrl && <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" class="underline underline-offset-4">WhatsApp support</a>}
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

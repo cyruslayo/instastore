@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   DEFAULT_SITE_SETTINGS,
   fetchLiveSiteSettings,
@@ -27,6 +27,7 @@ export default function StorefrontFooter({ storeSlug }: { storeSlug: string }) {
   const [customize, setCustomize] = useState(false);
   const [analytics, setAnalytics] = useState(false);
   const [marketing, setMarketing] = useState(false);
+  const dialogRef = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const currentConsent = readConsent();
     setConsent(currentConsent);
@@ -38,6 +39,12 @@ export default function StorefrontFooter({ storeSlug }: { storeSlug: string }) {
       .then(setSettings)
       .catch(() => undefined);
   }, [storeSlug]);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (isOpen && !dialog.open) dialog.showModal();
+    if (!isOpen && dialog.open) dialog.close();
+  }, [isOpen]);
   const storeName = settings.storeName.trim() || "Your Store";
   const instagram = instagramUrl(settings.instagramHandle);
   const whatsapp = whatsappUrl(settings.whatsappNumber);
@@ -71,14 +78,39 @@ export default function StorefrontFooter({ storeSlug }: { storeSlug: string }) {
           </a>
         )}
         <button type="button" onClick={() => { setCustomize(Boolean(consent)); setIsOpen(true); }} className="underline underline-offset-4">Privacy choices</button>
+        <a href="/privacy" className="underline underline-offset-4">Privacy</a>
+        <a href="/terms" className="underline underline-offset-4">Terms</a>
+        <a href="/" className="text-on-surface-variant/80 underline-offset-4 hover:text-primary hover:underline">Powered by InstaStore</a>
       </div>
-      {isOpen && <div className="fixed inset-x-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-[80] mx-auto max-w-xl rounded-2xl border border-outline-variant bg-surface p-5 botanical-shadow md:bottom-5" role="region" aria-labelledby="privacy-title">
-        <h2 id="privacy-title" className="font-headline-sm text-on-surface">Privacy choices</h2>
-        <p className="mt-2 text-sm text-on-surface-variant">Necessary storage keeps this store working. Optional analytics and marketing remain off unless you choose them.</p>
-        <p className="mt-3 text-xs text-on-surface-variant">Necessary <span className="font-semibold text-primary">Always on</span></p>
-        {customize && <div className="my-4 space-y-3 text-sm"><label className="flex items-center justify-between gap-4"><span>Analytics</span><input type="checkbox" checked={analytics} onChange={(event) => setAnalytics(event.target.checked)} /></label><label className="flex items-center justify-between gap-4"><span>Marketing</span><input type="checkbox" checked={marketing} onChange={(event) => setMarketing(event.target.checked)} /></label></div>}
-        <div className="mt-4 flex flex-wrap gap-2"><button type="button" onClick={() => choose(true, true)} className="rounded-full bg-store-primary px-4 py-2 text-xs font-bold text-store-on-primary">Accept all</button><button type="button" onClick={() => choose(false, false)} className="rounded-full border border-outline-variant px-4 py-2 text-xs font-bold text-primary">Reject optional</button>{customize ? <button type="button" onClick={() => choose(analytics, marketing)} className="rounded-full border border-outline-variant px-4 py-2 text-xs font-bold text-primary">Save choices</button> : <button type="button" onClick={() => setCustomize(true)} className="rounded-full border border-outline-variant px-4 py-2 text-xs font-bold text-primary">Customize</button>}</div>
-      </div>}
+      <dialog
+        ref={dialogRef}
+        onClose={() => setIsOpen(false)}
+        aria-labelledby="privacy-title"
+        aria-describedby="privacy-description"
+        className="fixed inset-x-3 bottom-3 top-auto m-auto max-h-[min(90dvh,42rem)] w-[calc(100%-1.5rem)] max-w-xl overflow-y-auto rounded-2xl border border-outline-variant bg-surface p-5 text-on-surface botanical-shadow backdrop:bg-primary/55 md:p-7"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <h2 id="privacy-title" className="font-headline-sm text-on-surface">Your privacy choices</h2>
+          <button type="button" onClick={() => setIsOpen(false)} className="touch-target rounded-full border border-outline-variant px-3 py-2 text-sm font-semibold text-primary">Close</button>
+        </div>
+        <p id="privacy-description" className="mt-3 max-w-prose text-sm leading-relaxed text-on-surface-variant">
+          Necessary storage keeps this store and checkout working. Optional analytics and marketing stay off unless you choose them. Your choice does not affect shopping or ordering.
+        </p>
+        <p className="mt-4 text-sm text-on-surface-variant">Necessary <span className="font-semibold text-primary">Always on</span></p>
+        <p className="mt-3 text-sm"><a href="/privacy" className="font-semibold text-primary underline underline-offset-4">Read the Privacy notice</a></p>
+        {customize && <fieldset className="my-5 space-y-4 rounded-xl border border-outline-variant p-4">
+          <legend className="px-1 font-semibold">Optional choices</legend>
+          <label className="flex min-h-11 items-center justify-between gap-4"><span><span className="block font-semibold">Analytics</span><span className="text-sm text-on-surface-variant">Helps understand storefront use.</span></span><input type="checkbox" checked={analytics} onChange={(event) => setAnalytics(event.target.checked)} /></label>
+          <label className="flex min-h-11 items-center justify-between gap-4"><span><span className="block font-semibold">Marketing</span><span className="text-sm text-on-surface-variant">Allows limited campaign attribution.</span></span><input type="checkbox" checked={marketing} onChange={(event) => setMarketing(event.target.checked)} /></label>
+        </fieldset>}
+        <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <button type="button" onClick={() => choose(true, true)} className="touch-target rounded-full border border-outline-variant px-4 py-3 text-sm font-semibold text-primary">Accept all</button>
+          <button type="button" onClick={() => choose(false, false)} className="touch-target rounded-full border border-outline-variant px-4 py-3 text-sm font-semibold text-primary">Reject optional</button>
+          {customize
+            ? <button type="button" onClick={() => choose(analytics, marketing)} className="touch-target rounded-full bg-store-primary px-4 py-3 text-sm font-semibold text-store-on-primary">Save choices</button>
+            : <button type="button" onClick={() => setCustomize(true)} className="touch-target rounded-full bg-store-primary px-4 py-3 text-sm font-semibold text-store-on-primary">Customize</button>}
+        </div>
+      </dialog>
     </footer>
   );
 }

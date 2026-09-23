@@ -1,0 +1,30 @@
+---
+import PlatformLayout from '@/layouts/PlatformLayout.astro';
+
+const operatorName = import.meta.env.PUBLIC_OPERATOR_NAME?.trim() || 'InstaStore';
+const supportEmail = import.meta.env.PUBLIC_SUPPORT_EMAIL?.trim();
+const whatsappDigits = (import.meta.env.PUBLIC_SUPPORT_WHATSAPP?.trim() || '').replace(/\D/g, '');
+const whatsappUrl = whatsappDigits ? `https://wa.me/${whatsappDigits}` : undefined;
+---
+
+<PlatformLayout title="Privacy notice | InstaStore" description="Plain-language information about data used by InstaStore and merchant storefronts.">
+  <article class="mx-auto max-w-3xl">
+    <p class="font-label-sm text-label-sm font-bold uppercase tracking-widest text-secondary">Privacy</p>
+    <h1 class="mt-3 font-display-md text-display-md text-primary">Privacy notice</h1>
+    <p class="mt-4 text-sm text-on-surface-variant">This notice describes the information used to provide InstaStore and merchant storefronts. It is general product information and has not been presented as legal advice.</p>
+
+    <div class="mt-stack-lg space-y-8">
+      <section><h2 class="font-headline-sm text-headline-sm text-primary">Information used</h2><p class="mt-2 leading-relaxed text-on-surface-variant">When a customer places an order, the storefront processes the customer name, phone number, optional Instagram handle and email, delivery address and instructions, selected products and quantities, payment receipt, and order status. The merchant account email and store configuration are used to operate the merchant’s account and storefront. Necessary browser storage supports features such as a store-specific cart and saved privacy choice.</p></section>
+      <section><h2 class="font-headline-sm text-headline-sm text-primary">Why information is used</h2><p class="mt-2 leading-relaxed text-on-surface-variant">Order information is used to create and fulfil orders, provide bank-transfer instructions, allow the merchant to verify submitted receipts, and let customers check order status. Account and store information operates merchant storefronts and supports store-scoped access intended to prevent incorrect or cross-store access. Optional storefront analytics help understand storefront usage only when Analytics is enabled. Limited campaign attribution is retained with an order only when the corresponding optional Marketing choice is enabled.</p></section>
+      <section><h2 class="font-headline-sm text-headline-sm text-primary">Service providers</h2><p class="mt-2 leading-relaxed text-on-surface-variant">InstaStore uses Supabase for database, authentication and file storage; Cloudflare for website hosting and compute; and, when configured and after Analytics consent, Umami for optional storefront analytics. This notice does not specify data-processing locations.</p></section>
+      <section><h2 class="font-headline-sm text-headline-sm text-primary">Your choices</h2><p class="mt-2 leading-relaxed text-on-surface-variant">Necessary storage is always enabled. Analytics and Marketing are optional and are off unless selected. Use “Privacy choices” in a merchant storefront footer to review or change your choice. You can withdraw optional consent at any time; this stops future optional collection in that browser. Previously submitted order records remain available for the merchant’s order operations. The storefront remains usable when optional choices are rejected.</p></section>
+      <section><h2 class="font-headline-sm text-headline-sm text-primary">Merchant storefronts and products</h2><p class="mt-2 leading-relaxed text-on-surface-variant">Products shown in a merchant storefront are offered by that merchant. InstaStore provides the commerce software and does not sell those products. Contact the merchant for product, delivery, fulfilment, return or refund questions. The merchant receives the information needed to handle its orders.</p></section>
+      <section><h2 class="font-headline-sm text-headline-sm text-primary">Questions and requests</h2><p class="mt-2 leading-relaxed text-on-surface-variant">For privacy questions or requests relating to the InstaStore service, contact {operatorName} through the available support details below. For an order or information held by a merchant, contact that merchant directly.</p>
+        {(supportEmail || whatsappUrl) ? <ul class="mt-3 space-y-2 text-on-surface-variant">
+          {supportEmail && <li>Email: <a class="font-semibold text-primary underline underline-offset-4" href={`mailto:${supportEmail}`}>{supportEmail}</a></li>}
+          {whatsappUrl && <li><a class="font-semibold text-primary underline underline-offset-4" href={whatsappUrl} target="_blank" rel="noopener noreferrer">Contact {operatorName} on WhatsApp</a></li>}
+        </ul> : <p class="mt-3 text-sm text-on-surface-variant">Platform support contact details have not been configured yet.</p>}
+      </section>
+    </div>
+  </article>
+</PlatformLayout>

@@ -24,7 +24,6 @@ export function loadUmamiAfterConsent(): Promise<UmamiTracker | null> {
       script.src = scriptUrl;
       script.dataset.websiteId = websiteId;
       script.dataset.autoTrack = "false";
-      script.dataset.autoPageview = "false";
       script.dataset.excludeSearch = "true";
       script.dataset.excludeHash = "true";
       script.dataset.instastoreUmami = "true";

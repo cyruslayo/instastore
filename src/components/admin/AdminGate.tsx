@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode, type SubmitEvent } from 'react';
 import { signInWithPassword, signOut, isAdmin, describeAuthError } from '@/lib/auth';
 
 export default function AdminGate({ children }: { children: ReactNode }) {
@@ -13,7 +13,7 @@ export default function AdminGate({ children }: { children: ReactNode }) {
     isAdmin().then(setAdmin).finally(() => setLoading(false));
   }, []);
 
-  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     try {
@@ -25,7 +25,7 @@ export default function AdminGate({ children }: { children: ReactNode }) {
       const ok = await isAdmin();
       if (!ok) {
         setError(
-          'This account does not have admin access. Check the browser console for details, then add a profiles row with role = \'admin\' for this user (see supabase/schema.sql).'
+          'This account is not set up for merchant access. Contact the InstaStore operator for help signing in.'
         );
         await signOut();
       }

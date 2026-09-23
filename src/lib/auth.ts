@@ -75,18 +75,16 @@ export async function isAdmin() {
   return (await getCurrentAdminProfile()) !== null;
 }
 
-// Maps a Supabase AuthApiError to a human-readable message with an
-// actionable hint. Sign-in failures return a generic "Invalid login
-// credentials" message, so the error code is needed to tell the real
-// cause apart (unconfirmed email vs wrong password).
+// Keep merchant-facing sign-in errors useful without exposing Supabase
+// implementation details; the operator follows docs/SUPABASE_SETUP.md.
 export function describeAuthError(err: unknown): string {
   const e = err as { code?: string; message?: string };
   switch (e?.code) {
     case 'email_not_confirmed':
-      return 'This email has not been confirmed. Confirm the user in Supabase (Authentication → Users → Confirm user), or click the confirmation link sent by email.';
+      return 'This merchant account is not active yet. Contact the InstaStore operator for help.';
     case 'invalid_credentials':
-      return 'Invalid email or password. Check the credentials under Supabase Authentication → Users.';
+      return 'Invalid email or password. Check your details and try again.';
     default:
-      return e?.message ? `Sign-in failed: ${e.message}` : 'Sign-in failed.';
+      return 'Sign-in failed. Please try again or contact the InstaStore operator.';
   }
 }

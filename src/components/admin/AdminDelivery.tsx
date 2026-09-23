@@ -95,7 +95,7 @@ export default function AdminDelivery() {
     setEditing(null);
   };
 
-  const save = async (event: React.FormEvent) => {
+  const save = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     const fee = Number(form.fee);
     if (!form.name.trim() || !form.provider.trim()) {

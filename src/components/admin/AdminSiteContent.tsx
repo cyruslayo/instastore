@@ -44,7 +44,7 @@ export default function AdminSiteContent() {
     key: K,
     value: SiteSettings[K],
   ) => setSettings((current) => ({ ...current, [key]: value }));
-  const save = async (event: React.FormEvent) => {
+  const save = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!liveSettingsLoaded) {
       setError("Live store settings must load successfully before saving.");

@@ -10,6 +10,8 @@
     "preview": "astro preview",
     "deploy": "astro build && wrangler deploy",
     "check": "astro check",
+    "launch:check": "node --env-file-if-exists=.env scripts/check-launch-config.mjs",
+    "smoke:live": "node scripts/smoke-live.mjs",
     "clean": "node -e \"fs.rmSync('dist',{recursive:true,force:true});fs.rmSync('.astro',{recursive:true,force:true})\"",
     "ladle": "ladle",
     "ladle:dev": "ladle serve",
@@ -42,5 +44,12 @@
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.3",
     "wrangler": "4.136.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "js-yaml": "4.3.2",
+      "svgo": "4.1.0",
+      "devalue": "5.9.2"
+    }
   }
 }

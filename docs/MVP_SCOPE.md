@@ -41,6 +41,7 @@ InstaStore is a storefront and order-management product for Instagram-first merc
 - Store branding: name, tagline, description, logo, hero image, and primary brand color.
 - Consent.
 - Attribution.
+- Platform homepage at `/`, public `/privacy` and `/terms`, and a subtle storefront attribution link.
 
 ### Analytics
 
@@ -70,3 +71,5 @@ InstaStore is a storefront and order-management product for Instagram-first merc
 First merchants use assisted account provisioning.
 
 Self-service signup comes after the first merchant cohort.
+
+The platform homepage uses configured support contact details for assisted onboarding. It does not collect leads or provide self-service signup. The Terms copy needs owner/legal review before commercial launch.

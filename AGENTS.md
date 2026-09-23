@@ -22,7 +22,7 @@ InstaStore — a storefront and order-management product for Instagram-first mer
 - Use `dvh` (not `vh`) for mobile containers; use `aspect-ratio` over fixed heights; use `clamp()` for fluid type/spacing.
 
 ## Architecture Notes
-- Routes live under `src/pages/`. Public storefronts are store-scoped under `/s/<store-slug>/...`; legacy customer URLs are lightweight redirects to `default-store` (see below). Storefront pages use `src/layouts/Layout.astro` (Header, skip link, MotionProvider, BottomNav, StorefrontFooter), which requires a `storeSlug` prop; admin pages use `src/layouts/AdminLayout.astro` (sidebar + AdminBottomNav on mobile).
+- Routes live under `src/pages/`. `/` is the InstaStore platform homepage; `/privacy` and `/terms` are public platform pages. Public storefronts are store-scoped under `/s/<store-slug>/...`; compatibility customer URLs are lightweight redirects to `default-store` (see below). Storefront pages use `src/layouts/Layout.astro` (Header, skip link, MotionProvider, BottomNav, StorefrontFooter), which requires a `storeSlug` prop; admin pages use `src/layouts/AdminLayout.astro` (sidebar + AdminBottomNav on mobile).
 - Storefront pages resolve the store with `getPublicStoreBySlug` (`src/lib/stores.ts`) and render a not-found "Store unavailable" result when the slug is unknown or the store is suspended. Invalid stores never fall back to `default-store`.
 - Storefront pages fetch Supabase and fall back to empty/placeholder data when the DB is empty or unavailable.
 - Cart state is client-only in a `nanostores` store (`src/store/cart.ts`) keyed by store slug (`Record<storeSlug, CartItem[]>`), read via `useStore()` from `@nanostores/react`. One browser keeps separate carts per store; products never cross between them.
@@ -46,10 +46,8 @@ back to `default-store`.
 - `/s/<store>/checkout` — guest checkout: delivery details + delivery zone + bank transfer + receipt upload.
 - `/s/<store>/track` — order status lookup by tracking code + phone.
 
-Legacy customer URLs are lightweight redirects that preserve query parameters
-(`/track?order=ORD-123` → `/s/default-store/track?order=ORD-123`):
+Legacy customer URLs (except `/`, now the platform homepage) are lightweight redirects that preserve query parameters (`/track?order=ORD-123` → `/s/default-store/track?order=ORD-123`):
 
-- `/` → `/s/default-store`
 - `/shop` → `/s/default-store/shop`
 - `/oils` → `/s/default-store/shop`
 - `/product/<slug>` → `/s/default-store/product/<slug>`
@@ -57,7 +55,11 @@ Legacy customer URLs are lightweight redirects that preserve query parameters
 - `/checkout` → `/s/default-store/checkout`
 - `/track` → `/s/default-store/track`
 
-There is intentionally no InstaStore marketing homepage.
+The platform homepage is configurable with public build-time `PUBLIC_SITE_URL`, `PUBLIC_OPERATOR_NAME`, `PUBLIC_SUPPORT_EMAIL`, and `PUBLIC_SUPPORT_WHATSAPP` values. Those values may be absent for development builds; `pnpm launch:check` checks required launch configuration. Do not add secrets with a `PUBLIC_` prefix.
+
+HTTP response security headers are set by `src/middleware.ts` for Worker-rendered responses and `public/_headers` for Cloudflare static assets. The Worker uses Cloudflare's built-in observability; no external monitoring service is required.
+
+The `/` platform homepage is intentionally small and supports assisted onboarding only; do not add self-service signup.
 
 ## Admin Routes
 - `/admin` — dashboard with verified revenue (Processing/Shipped/Fulfilled only), pending-verification count, active low-stock count (inventory <= 5), active-product count, two short attention queues, and the latest five orders.

@@ -19,8 +19,8 @@ and independently reviewable.
 | Complete | T06  | Store branding                    |
 | Complete | T07  | Merchant operations               |
 | Complete | T08  | Measurement foundation            |
-| Next     | T09  | Launch hardening                  |
-| Pending  | T10  | First merchant cohort             |
+| In Progress | T09  | Launch hardening                  |
+| Next        | T10  | First merchant cohort             |
 | Later    | T11  | Self-service merchant signup      |
 | Later    | T12  | Meta Pixel and CAPI               |
 | Later    | T13  | Merchant intelligence             |
@@ -35,5 +35,7 @@ and independently reviewable.
 - Prefer simple solutions over infrastructure complexity.
 - Preserve working commerce behavior.
 - T10 represents the first commercial MVP launch.
+- T09 is Complete only after real Supabase/Auth/PostgREST/Storage, commerce, consent/analytics (when used), and Cloudflare runtime verification gates pass. Local SQL shims do not satisfy this gate.
+- T10 is Complete only after an authorized launch environment and at least one real merchant passes and confirms acceptance. Until then, record “Launch Ready — Awaiting First Merchant” when preparation is complete.
 - Detailed implementation instructions come from the active task prompt.
 - Update this roadmap when a task is completed.

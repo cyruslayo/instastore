@@ -48,7 +48,7 @@ A storefront and order-management product for Instagram-first merchants.
 
 ## Configuration
 
-Copy `.env.example` to `.env` and set `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` to your Supabase project values. These are public (non-secret) values that Astro inlines into the build at build time. Optional analytics uses `PUBLIC_UMAMI_SCRIPT_URL` and `PUBLIC_UMAMI_WEBSITE_ID`; `PUBLIC_UMAMI_HOST_URL` is optional when the script and collection host differ. Without Umami configuration, analytics safely does nothing.
+Copy `.env.example` to `.env`. `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` are public, non-secret values required for storefront data; Astro inlines them into the build. `PUBLIC_SITE_URL`, `PUBLIC_OPERATOR_NAME`, `PUBLIC_SUPPORT_EMAIL`, and `PUBLIC_SUPPORT_WHATSAPP` configure the platform homepage, canonical URLs, and assisted onboarding contact. Production launch configuration can be checked with `pnpm launch:check`; missing optional launch values do not block the build. Optional analytics uses `PUBLIC_UMAMI_SCRIPT_URL` and `PUBLIC_UMAMI_WEBSITE_ID`; `PUBLIC_UMAMI_HOST_URL` is optional when the script and collection host differ. Without Umami configuration, analytics safely does nothing.
 
 ## Deploy
 
@@ -59,7 +59,7 @@ Copy `.env.example` to `.env` and set `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE
 
 ## Storefront URLs
 
-Each merchant storefront is reachable at `/s/<store-slug>` (for example `/s/default-store`), with `/s/<store-slug>/shop`, `/s/<store-slug>/product/<slug>`, `/s/<store-slug>/cart`, `/s/<store-slug>/checkout`, and `/s/<store-slug>/track`. Legacy customer URLs (`/`, `/shop`, `/cart`, `/checkout`, `/track`, `/product/<slug>`, `/oils`) redirect to the matching `default-store` route and preserve query parameters.
+The platform homepage is `/`. Each merchant storefront is reachable at `/s/<store-slug>` (for example `/s/default-store`), with `/s/<store-slug>/shop`, `/s/<store-slug>/product/<slug>`, `/s/<store-slug>/cart`, `/s/<store-slug>/checkout`, and `/s/<store-slug>/track`. The legacy customer URLs `/shop`, `/cart`, `/checkout`, `/track`, `/product/<slug>`, and `/oils` redirect to the matching `default-store` route and preserve query parameters. Public platform information is available at `/privacy` and `/terms`.
 
 ## Merchant operations and measurement
 
@@ -68,6 +68,8 @@ The dashboard reports **Verified Revenue** from orders in `Processing`, `Shipped
 Storefront consent has Necessary (always on), Analytics (optional), and Marketing (optional) categories. Optional categories default off and are stored as a versioned local browser preference. walkerOS (`@walkeros/collector` and `@walkeros/web-source-browser`) supplies the entity/action event model; Umami is the optional reporting destination and is loaded only after Analytics consent. Events contain store identity and minimal behavioral fields, never customer or receipt data. Anonymous order attribution is sanitized again by `create_store_order()` and stored on `orders.attribution` by migration `0015_measurement_foundation.sql`. No Meta tracking destination is included.
 
 T09 is the required real-integration launch gate: it must test Supabase Auth, PostgREST RPCs, actual Storage HTTP uploads and reads, end-to-end checkout and merchant verification, tracking, plus real Umami loading/receipt only after consent and attribution on a real order. The disposable SQL checks do not replace these platform tests.
+
+First merchants are provisioned with operator assistance. See [docs/MERCHANT_ONBOARDING.md](docs/MERCHANT_ONBOARDING.md) and [docs/LAUNCH_RUNBOOK.md](docs/LAUNCH_RUNBOOK.md). The Terms copy requires owner/legal review before commercial launch. T10 remains open until a real merchant accepts a complete customer-to-tracking flow.
 
 Store catalogs include browser-side search across product names, categories, and descriptions, with category and in-stock filters plus newest/price sorting. Products support a presentation-only compare-at price and up to four additional gallery images. Merchants can customize their storefront description, logo, hero image, and primary brand color in Store Settings.
 

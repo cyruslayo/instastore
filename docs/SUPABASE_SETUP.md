@@ -1,10 +1,10 @@
 # InstaStore Supabase setup
 
-This is the fresh-install path for a **new, empty Supabase project**. Never run these migrations against an existing project that already has production data.
+This is the fresh-install path for a **new, empty Supabase project**. Never run these migrations against an existing project that already has production data. The previously configured shared project is known to be behind the repository migration chain and is read-only unless the owner explicitly authorizes a migration. Use an isolated project for T09 and an explicitly identified, authorized project for production. Never create paid resources without approval.
 
 ## Setup
 
-1. Create a new Supabase project.
+1. Create/identify a new isolated Supabase project only with authorization and any required resource-cost approval. Do not guess a project ID or treat the old shared project as production.
 2. Copy its Project URL and anon key.
 3. Configure local `.env`:
 
@@ -15,7 +15,19 @@ This is the fresh-install path for a **new, empty Supabase project**. Never run 
 
 4. In Storage, manually create a bucket named `receipts`. Set it **private**, maximum file size to **5,242,880 bytes (5 MiB)**, and allowed MIME types to `image/jpeg`, `image/png`, and `application/pdf`. Do not create the bucket with SQL.
 5. In Storage, manually create a second bucket named `product-images`. Set it **public**, maximum file size to **5,242,880 bytes (5 MiB)**, and allowed MIME types to `image/jpeg`, `image/png`, and `image/webp`. Product images are public storefront assets; only admins can upload or delete them through Storage policies. Receipts are separate private data and must never be made public.
-6. Apply the migrations in filename order (Supabase CLI may be used locally, but do not link or push to a remote project):
+6. Apply migrations in filename order. For an authorized fresh remote project, use the current Supabase CLI workflow from the repository root:
+
+   ```sh
+   supabase login
+   supabase link --project-ref PROJECT_REF
+   supabase migration list --linked
+   supabase db push --dry-run
+   # Inspect the target project and every pending migration before proceeding.
+   supabase db push
+   supabase migration list --linked
+   ```
+
+   Substitute only the actual project reference provided by the operator. Never link the shared/production project without explicit authorization. If the CLI reports existing remote migration history or unexpected pending migrations, stop and investigate; do not bypass migration history manually. Do not reset a remote project. For local SQL testing, use a disposable local database. Then apply the migrations in filename order:
 
    - `0001_initial_commerce_schema.sql`
    - `0002_commerce_security_and_rpcs.sql`
@@ -72,7 +84,7 @@ There is no self-signup and no store switcher. Each merchant belongs to exactly 
            (select id from public.stores where slug = 'my-store'));
    ```
 
-Public storefronts are live at `/s/<store-slug>` (for example `/s/default-store`). Legacy customer URLs (`/`, `/shop`, `/cart`, `/checkout`, `/track`, `/product/<slug>`, `/oils`) redirect to the matching `default-store` route.
+Public storefronts are live at `/s/<store-slug>` (for example `/s/default-store`). `/` is the InstaStore platform homepage. Legacy customer URLs (`/shop`, `/cart`, `/checkout`, `/track`, `/product/<slug>`, `/oils`) redirect to the matching `default-store` route.
 
 ## Delivery zones
 
@@ -131,10 +143,10 @@ select store_id, store_name, currency, delivery_fee from public.store_settings;
 select schemaname, tablename, rowsecurity
 from pg_tables
 where schemaname = 'public'
-  and tablename in ('profiles', 'products', 'store_settings', 'orders', 'stores');
+  and tablename in ('profiles', 'products', 'store_settings', 'orders', 'stores', 'delivery_zones');
 select policyname, tablename, cmd, roles
 from pg_policies
-where tablename in ('products', 'orders', 'store_settings', 'stores')
+where tablename in ('products', 'orders', 'store_settings', 'stores', 'delivery_zones')
    or tablename = 'objects';
 select
   has_function_privilege('anon', 'public.set_order_status(uuid,text)', 'EXECUTE') as anon_set_order_status,
@@ -144,6 +156,8 @@ select
 Expected security conclusions: anon can select active products and active delivery zones for any active store, and execute `get_storefront_settings`, `get_storefront_settings_by_slug`, `create_store_order`, and `get_order_status`; anon cannot execute `set_order_status`, read/write orders, modify products, or modify settings. Draft products and products belonging to suspended stores are not public. Authenticated merchants can manage only their own store's products/settings/orders/delivery zones and execute `set_order_status`. Receipt uploads are store-scoped to an active store; receipts are private and only the owning merchant can read them (plus legacy receipts for the `default-store` merchant).
 
 For the order-status privilege check, expect `anon_set_order_status = false` and `authenticated_set_order_status = true`.
+
+Also verify the migration history with `supabase migration list --linked`; a fresh launch candidate must have every repository migration `0001` through `0015` recorded. Verify `orders.attribution` exists after migration 0015. Do not mark a SQL-shim run as real Supabase verification.
 
 ### Tenant verification
 
@@ -185,7 +199,7 @@ Expected results: `stores_table` is not null, `rowsecurity` is `true`, `default_
 
 Products referenced by historical orders cannot be hard-deleted. Deactivate those products instead. The status state machine allows `Pending Verification -> Processing` or `Cancelled`, `Processing -> Shipped` or `Cancelled`, and `Shipped -> Fulfilled`; `Fulfilled` and `Cancelled` are terminal, and repeated same-status calls are idempotent. Cancellation restores reserved inventory exactly once only before shipment; shipped and fulfilled orders cannot be cancelled through the MVP RPC. Customers remain guests.
 
-Confirm the application is configured for this new project only. It must never point at production data.
+Confirm the application is configured for the intended project. Test project values must never point at production data. The service-role key is never a browser/build setting and must not be exposed through a `PUBLIC_` variable.
 
 ## Two-store isolation verification
 
@@ -297,10 +311,12 @@ untouched.
   cancellation restores stock exactly once and repeating it does not double-restock.
 - **Store-scoped tracking** — `get_order_status()` returns the order only for the correct store slug
   and phone; another store slug or a wrong phone returns nothing.
-- **HTTP routing (dev server, dummy Supabase env)** — `/`, `/shop`, `/cart`, `/checkout`, `/track`,
+- **Historical HTTP routing at the time of B2V (dev server, dummy Supabase env)** — `/`, `/shop`, `/cart`, `/checkout`, `/track`,
   `/product/<slug>`, `/oils` all redirect to `/s/default-store/...` and preserve query strings
   (e.g. `/track?order=ORD-123`, `/oils?x=1`); `/s/store-a` returns 404 with a "Store unavailable"
   page and does not leak `default-store` content.
+
+After B5, `/` is the platform homepage; the compatibility redirect list no longer includes `/`.
 
 ### Tests expected but not run
 
@@ -385,3 +401,13 @@ PUBLIC_UMAMI_HOST_URL=https://analytics.example.com
 The event taxonomy is page view, product view, search submit, product add, cart view, checkout start, and order submit. Event data always identifies `store_id` and `store_slug`, and otherwise contains only event-specific safe fields. No customer PII, delivery details, receipt path, bank details, or tracking code may be sent. `orders.attribution` (migration `0015`) stores only the allowlisted fields described above after a second server-side whitelist/length/consent check. Landing and referrer query/hash components are removed. The same receipt retry never changes existing attribution.
 
 For each storefront, footer **Privacy choices** reopens Necessary/Analytics/Marketing controls. Analytics must be explicitly accepted before loading the external script; rejecting both optional categories must leave browsing and checkout functional.
+
+## Platform build configuration
+
+The public build-time values `PUBLIC_SITE_URL`, `PUBLIC_OPERATOR_NAME`, `PUBLIC_SUPPORT_EMAIL`, and `PUBLIC_SUPPORT_WHATSAPP` configure the platform homepage and support/privacy contact. These values are optional for local builds. `pnpm launch:check` checks them before launch. Supabase URL/anon key and Umami settings remain public values; never add service-role keys, database passwords, or access tokens to application build variables. Umami settings are optional and analytics is a no-op when absent.
+
+See [LAUNCH_RUNBOOK.md](LAUNCH_RUNBOOK.md) for controlled deployment and rollback, and [MERCHANT_ONBOARDING.md](MERCHANT_ONBOARDING.md) for a transaction-based assisted provisioning template. Terms copy is a starting point requiring owner/legal review before commercial launch.
+
+## B5 status record
+
+Repository-only launch preparation added the public platform homepage, privacy and terms pages, storefront attribution link, consent dialog, response security headers, Cloudflare built-in Worker observability, launch configuration/smoke scripts, and launch/onboarding documentation. The current environment has not been used to apply remote migrations, create merchants, alter Storage buckets, deploy a Worker, or run real Umami checks. The prior B4 SQL-shim record is not a substitute. T09 remains In Progress; T10 remains Next — Launch Ready, Awaiting First Merchant once preparation and real integration verification are complete. Owner authorization and access to isolated Supabase, Umami test property, and Cloudflare staging are still needed to run those external gates.

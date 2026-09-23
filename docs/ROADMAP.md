@@ -36,6 +36,6 @@ and independently reviewable.
 - Preserve working commerce behavior.
 - T10 represents the first commercial MVP launch.
 - T09 is Complete only after real Supabase/Auth/PostgREST/Storage, commerce, consent/analytics (when used), and Cloudflare runtime verification gates pass. Local SQL shims do not satisfy this gate.
-- T10 is Complete only after an authorized launch environment and at least one real merchant passes and confirms acceptance. Until then, record “Launch Ready — Awaiting First Merchant” when preparation is complete.
+- T10 is Complete only after T09 is Complete, the launch environment is authorized, and at least one real merchant passes and confirms acceptance. The status “Launch Ready — Awaiting First Merchant” applies only after all launch preparation and T09 gates pass; otherwise T10 remains Next.
 - Detailed implementation instructions come from the active task prompt.
 - Update this roadmap when a task is completed.

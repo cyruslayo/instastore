@@ -43,7 +43,8 @@ This is the fresh-install path for a **new, empty Supabase project**. Never run 
    - `0012_delivery_zone_ordering.sql`
     - `0013_product_merchandising.sql`
     - `0014_store_branding.sql`
-    - `0015_measurement_foundation.sql`
+     - `0015_measurement_foundation.sql`
+     - `0016_launch_security_hardening.sql`
 7. Create the first user in Supabase Auth (email/password or the configured Auth provider).
 8. Copy the Auth user's UUID and insert the matching admin profile for the existing `default-store` in the SQL editor:
 
@@ -157,7 +158,7 @@ Expected security conclusions: anon can select active products and active delive
 
 For the order-status privilege check, expect `anon_set_order_status = false` and `authenticated_set_order_status = true`.
 
-Also verify the migration history with `supabase migration list --linked`; a fresh launch candidate must have every repository migration `0001` through `0015` recorded. Verify `orders.attribution` exists after migration 0015. Do not mark a SQL-shim run as real Supabase verification.
+Also verify the migration history with `supabase migration list --linked`; a fresh launch candidate must have every repository migration `0001` through `0016` recorded. Verify `orders.attribution` exists after migration 0015. Do not mark a SQL-shim run as real Supabase verification.
 
 ### Tenant verification
 

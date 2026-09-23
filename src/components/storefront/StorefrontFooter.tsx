@@ -101,7 +101,7 @@ export default function StorefrontFooter({ storeSlug }: { storeSlug: string }) {
         {customize && <fieldset className="my-5 space-y-4 rounded-xl border border-outline-variant p-4">
           <legend className="px-1 font-semibold">Optional choices</legend>
           <label className="flex min-h-11 items-center justify-between gap-4"><span><span className="block font-semibold">Analytics</span><span className="text-sm text-on-surface-variant">Helps understand storefront use.</span></span><input type="checkbox" checked={analytics} onChange={(event) => setAnalytics(event.target.checked)} /></label>
-          <label className="flex min-h-11 items-center justify-between gap-4"><span><span className="block font-semibold">Marketing</span><span className="text-sm text-on-surface-variant">Allows limited campaign attribution.</span></span><input type="checkbox" checked={marketing} onChange={(event) => setMarketing(event.target.checked)} /></label>
+          <label className="flex min-h-11 items-center justify-between gap-4"><span><span className="block font-semibold">Marketing</span><span className="text-sm text-on-surface-variant">Allows advertising-platform attribution identifiers when present. No advertising pixel is loaded.</span></span><input type="checkbox" checked={marketing} onChange={(event) => setMarketing(event.target.checked)} /></label>
         </fieldset>}
         <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-3">
           <button type="button" onClick={() => choose(true, true)} className="touch-target rounded-full border border-outline-variant px-4 py-3 text-sm font-semibold text-primary">Accept all</button>

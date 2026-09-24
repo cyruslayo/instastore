@@ -249,23 +249,27 @@ export default function Checkout({ storeId, storeSlug }: { storeId: string; stor
     );
 
   const noZones = zonesLoaded && zones.length === 0;
+  const checkoutAvailabilityMessage = settingsError
+    ? settingsError
+    : !settingsLoaded || !zonesLoaded
+      ? "Store settings are loading. Checkout will be available when they are ready."
+      : noZones
+        ? "Delivery is not configured for this store yet."
+        : !hasBankDetails(settings)
+          ? "Checkout is temporarily unavailable because payment details have not been configured."
+          : null;
 
   return (
     <main className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop pt-24 md:pt-32 pb-32">
       <h1 className="font-headline-lg text-headline-lg text-primary mb-stack-lg">
         Guest Checkout
       </h1>
-      {!checkoutReady && (
+      {checkoutAvailabilityMessage && (
         <div
           role="alert"
           className="mb-6 rounded-xl border border-error/30 bg-error/10 p-4 text-error"
         >
-          {settingsError ||
-            (noZones
-              ? "Delivery is not configured for this store yet."
-              : settingsLoaded && !hasBankDetails(settings)
-                ? "Checkout is temporarily unavailable because payment details have not been configured."
-                : "Store settings are loading. Checkout will be available when they are ready.")}
+          {checkoutAvailabilityMessage}
         </div>
       )}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter">

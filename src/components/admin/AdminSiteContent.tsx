@@ -305,6 +305,7 @@ function AssetField({ label, value, removed, file, onFile, onRemove, onUndoRemov
   label: string; value: string; removed: boolean; file: File | null;
   onFile: (file: File | null) => void; onRemove: () => void; onUndoRemove: () => void; inputClass: string;
 }) {
+  const inputId = `store-asset-${label.toLowerCase().replace(/\s+/g, "-")}`;
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   useEffect(() => {
     if (!file) { setLocalPreview(null); return; }
@@ -313,11 +314,11 @@ function AssetField({ label, value, removed, file, onFile, onRemove, onUndoRemov
     return () => URL.revokeObjectURL(objectUrl);
   }, [file]);
   return <div className="space-y-3">
-    <span className="block font-label-sm text-xs uppercase tracking-wider text-primary font-bold">{label}</span>
+    <label htmlFor={inputId} className="block font-label-sm text-xs uppercase tracking-wider text-primary font-bold">{label}</label>
     {localPreview && <img src={localPreview} alt={`Selected ${label.toLowerCase()} preview`} className="max-h-32 max-w-56 rounded-xl border border-outline-variant object-contain" />}
     {value && !removed && !file && <img src={value} alt={`${label} preview`} referrerPolicy="no-referrer" className="max-h-32 max-w-56 rounded-xl border border-outline-variant object-contain" />}
     {file && <p className="text-xs text-on-surface-variant">Selected: {file.name}. Save Store Settings to upload.</p>}
-    <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => onFile(event.target.files?.[0] || null)} className={`${inputClass} file:mr-3 file:rounded-lg file:border-0 file:bg-surface-container file:px-3 file:py-1`} />
+    <input id={inputId} name={inputId} type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => onFile(event.target.files?.[0] || null)} className={`${inputClass} file:mr-3 file:rounded-lg file:border-0 file:bg-surface-container file:px-3 file:py-1`} />
     <p className="text-label-sm text-on-surface-variant">JPEG, PNG, or WebP. Maximum 5 MiB.</p>
     {removed ? <button type="button" onClick={onUndoRemove} className="text-xs text-secondary underline">Keep existing {label.toLowerCase()}</button> : value && <button type="button" onClick={onRemove} className="text-xs text-error underline">Remove {label.toLowerCase()}</button>}
   </div>;

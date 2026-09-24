@@ -86,12 +86,17 @@ export default function AdminOrders() {
       {/* Filter and Search Bar */}
       <div className="bg-surface p-3.5 sm:p-4 rounded-2xl border border-outline-variant/60 botanical-shadow space-y-3">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <label htmlFor="admin-orders-search" className="sr-only">
+            Search orders
+          </label>
           <input
-            type="text"
+            id="admin-orders-search"
+            name="search"
+            type="search"
             placeholder="Search by Order ID (#ORD...) or Instagram handle..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1 text-xs sm:text-sm px-3.5 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant/60 focus:outline-none focus:border-primary text-primary"
+            className="min-h-12 flex-1 text-base sm:text-sm px-3.5 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant/60 focus:outline-none focus:border-primary text-primary"
           />
         </div>
 
@@ -102,7 +107,7 @@ export default function AdminOrders() {
               key={s}
               type="button"
               onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-colors whitespace-nowrap cursor-pointer ${
+              className={`min-h-12 px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-colors whitespace-nowrap cursor-pointer ${
                 statusFilter === s
                   ? 'bg-primary text-on-primary'
                   : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'
@@ -174,8 +179,9 @@ export default function AdminOrders() {
                   </span>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setSelectedOrder(order)}
-                  className="px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold font-label-sm uppercase tracking-wider hover:bg-primary/90 transition-colors cursor-pointer"
+                  className="min-h-12 min-w-12 px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold font-label-sm uppercase tracking-wider hover:bg-primary/90 transition-colors cursor-pointer"
                 >
                   View Details
                 </button>
@@ -230,7 +236,7 @@ export default function AdminOrders() {
                       </span>
                     </td>
                     <td className="p-4 text-right">
-                      <button onClick={() => setSelectedOrder(order)} aria-label={`View order ${order.id}`} className="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-lg hover:bg-surface-container cursor-pointer inline-flex items-center gap-1 text-xs font-bold">
+                      <button type="button" onClick={() => setSelectedOrder(order)} aria-label={`View order ${order.id}`} className="min-h-12 min-w-12 p-2 text-on-surface-variant hover:text-primary transition-colors rounded-lg hover:bg-surface-container cursor-pointer inline-flex items-center justify-center gap-1 text-xs font-bold">
                         <EyeIcon />
                         <span>View</span>
                       </button>

@@ -286,6 +286,8 @@ export default function ProductFormModal({
   if (!isOpen) return null;
   const imageToShow =
     previewUrl || (formData.removeImage ? null : formData.currentImage);
+  const canAddGalleryImages =
+    formData.galleryImages.length + newGalleryImages.length < 4;
   return (
     <dialog
       ref={dialogRef}
@@ -436,9 +438,9 @@ export default function ProductFormModal({
               </button>
             </label>
             <div className="sm:col-span-2 space-y-3">
-              <span className="font-label-md text-label-md text-on-surface-variant block">
+              <label htmlFor="product-image-file" className="font-label-md text-label-md text-on-surface-variant block">
                 Product Image
-              </span>
+              </label>
               {imageToShow ? (
                 <div className="relative w-32 h-32 rounded-xl overflow-hidden bg-surface-container">
                   <img
@@ -456,6 +458,8 @@ export default function ProductFormModal({
                 </div>
               )}
               <input
+                id="product-image-file"
+                name="productImage"
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 onChange={handleImageChange}
@@ -479,7 +483,7 @@ export default function ProductFormModal({
               )}
             </div>
             <div className="sm:col-span-2 space-y-3">
-              <span className="font-label-md text-label-md text-on-surface-variant block">Gallery images ({formData.galleryImages.length + newGalleryImages.length}/4)</span>
+              <label htmlFor={canAddGalleryImages ? "product-gallery-files" : undefined} className="font-label-md text-label-md text-on-surface-variant block">Gallery images ({formData.galleryImages.length + newGalleryImages.length}/4)</label>
               <div className="flex flex-wrap gap-3">
                 {formData.galleryImages.map((url, index) => (
                   <div key={`${url}-${index}`} className="relative h-24 w-24 overflow-hidden rounded-xl bg-surface-container">
@@ -494,7 +498,7 @@ export default function ProductFormModal({
                   </div>
                 ))}
               </div>
-              {formData.galleryImages.length + newGalleryImages.length < 4 && <input type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={handleGalleryChange} className="block w-full text-sm" />}
+              {canAddGalleryImages && <input id="product-gallery-files" name="galleryImages" type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={handleGalleryChange} className="block w-full text-sm" />}
               <p className="text-label-sm text-on-surface-variant">Up to four additional JPEG, PNG, or WebP images (5 MiB each). New images are added at the end.</p>
             </div>
             <label className="flex items-center gap-3">

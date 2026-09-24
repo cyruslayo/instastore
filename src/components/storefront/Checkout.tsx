@@ -20,6 +20,14 @@ import { readConsent } from "@/lib/analytics/consent";
 const RECEIPT_TYPES = ["image/jpeg", "image/png", "application/pdf"] as const;
 const CITIES: DeliveryCity[] = ["Abuja", "Lagos"];
 const CITY_STATES: Record<DeliveryCity, string> = { Abuja: "FCT", Lagos: "Lagos" };
+const DELIVERY_FIELDS = [
+  { name: "fullName", label: "Full name *", type: "text", autoComplete: "name", required: true },
+  { name: "phone", label: "Phone number *", type: "tel", inputMode: "tel", autoComplete: "tel", required: true },
+  { name: "instagramHandle", label: "Instagram handle (optional)", type: "text" },
+  { name: "email", label: "Email (optional)", type: "email", inputMode: "email", autoComplete: "email" },
+  { name: "address2", label: "Address line 2 (optional)", type: "text", autoComplete: "address-line2" },
+  { name: "landmark", label: "Landmark (optional)", type: "text" },
+] as const;
 
 function hasBankDetails(settings: SiteSettings): boolean {
   return Boolean(
@@ -279,34 +287,36 @@ export default function Checkout({ storeId, storeSlug }: { storeId: string; stor
               Delivery Details
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[
-                ["fullName", "Full name *"],
-                ["phone", "Phone number *"],
-                ["instagramHandle", "Instagram handle (optional)"],
-                ["email", "Email (optional)"],
-                ["address2", "Address line 2 (optional)"],
-                ["landmark", "Landmark (optional)"],
-              ].map(([name, label]) => (
+              {DELIVERY_FIELDS.map((field) => (
                 <label
-                  key={name}
+                  key={field.name}
+                  htmlFor={`checkout-${field.name}`}
                   className="space-y-2 text-sm text-on-surface-variant"
                 >
-                  {label}
+                  {field.label}
                   <input
-                    name={name}
-                    value={form[name as keyof typeof form]}
+                    id={`checkout-${field.name}`}
+                    name={field.name}
+                    type={field.type}
+                    inputMode={"inputMode" in field ? field.inputMode : undefined}
+                    autoComplete={"autoComplete" in field ? field.autoComplete : undefined}
+                    required={"required" in field ? field.required : undefined}
+                    value={form[field.name]}
                     onChange={updateForm}
-                    className="w-full min-h-11 p-3 bg-surface border border-outline rounded-lg text-primary"
+                    className="w-full min-h-12 p-3 bg-surface border border-outline rounded-lg text-base sm:text-sm text-primary"
                   />
                 </label>
               ))}
-              <label className="space-y-2 text-sm text-on-surface-variant">
+              <label htmlFor="checkout-city" className="space-y-2 text-sm text-on-surface-variant">
                 City *
                 <select
+                  id="checkout-city"
                   name="city"
+                  autoComplete="address-level2"
+                  required
                   value={form.city}
                   onChange={handleCityChange}
-                  className="w-full min-h-11 p-3 bg-surface border border-outline rounded-lg text-primary"
+                  className="w-full min-h-12 p-3 bg-surface border border-outline rounded-lg text-base sm:text-sm text-primary"
                 >
                   <option value="">Select city</option>
                   {CITIES.map((city) => (
@@ -316,14 +326,16 @@ export default function Checkout({ storeId, storeSlug }: { storeId: string; stor
                   ))}
                 </select>
               </label>
-              <label className="space-y-2 text-sm text-on-surface-variant">
+              <label htmlFor="checkout-zone" className="space-y-2 text-sm text-on-surface-variant">
                 Delivery zone *
                 <select
+                  id="checkout-zone"
                   name="zoneId"
+                  required
                   value={form.zoneId}
                   onChange={updateForm}
                   disabled={!form.city || cityZones.length === 0}
-                  className="w-full min-h-11 p-3 bg-surface border border-outline rounded-lg text-primary disabled:opacity-60"
+                  className="w-full min-h-12 p-3 bg-surface border border-outline rounded-lg text-base sm:text-sm text-primary disabled:opacity-60"
                 >
                   <option value="">
                     {form.city
@@ -340,14 +352,17 @@ export default function Checkout({ storeId, storeSlug }: { storeId: string; stor
                 </select>
               </label>
             </div>
-            <label className="block space-y-2 text-sm text-on-surface-variant mt-4">
+            <label htmlFor="checkout-address" className="block space-y-2 text-sm text-on-surface-variant mt-4">
               Delivery address *
               <textarea
+                id="checkout-address"
                 name="address"
                 rows={3}
+                autoComplete="street-address"
+                required
                 value={form.address}
                 onChange={updateForm}
-                className="w-full p-3 bg-surface border border-outline rounded-lg text-primary"
+                className="w-full min-h-24 p-3 bg-surface border border-outline rounded-lg text-base sm:text-sm text-primary"
               />
             </label>
             {selectedZone && (
@@ -380,13 +395,16 @@ export default function Checkout({ storeId, storeSlug }: { storeId: string; stor
                 Payment details are unavailable.
               </p>
             )}
-            <label className="block mt-5 text-sm text-on-surface-variant">
+            <label htmlFor="checkout-receipt" className="block mt-5 text-sm text-on-surface-variant">
               Payment receipt
               <input
+                id="checkout-receipt"
+                name="receipt"
                 type="file"
+                required
                 accept="image/jpeg,image/png,application/pdf"
                 onChange={handleFile}
-                className="block mt-2"
+                className="block min-h-12 w-full mt-2 text-base sm:text-sm"
               />
               {previewUrl && (
                 <img
@@ -441,7 +459,7 @@ export default function Checkout({ storeId, storeSlug }: { storeId: string; stor
             type="button"
             onClick={submit}
             disabled={submitting || !checkoutReady}
-            className="w-full mt-6 py-4 bg-primary text-on-primary rounded-full disabled:opacity-50"
+            className="min-h-12 w-full mt-6 py-4 bg-primary text-on-primary rounded-full disabled:opacity-50"
           >
             {submitting ? "Submitting…" : "Submit Order"}
           </button>

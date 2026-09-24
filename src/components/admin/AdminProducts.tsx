@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import ProductFormModal from "@/components/admin/ProductFormModal";
 import { formatNaira } from "@/lib/utils";
 import { deleteManagedProductImage } from "@/lib/productImages";
@@ -12,6 +12,8 @@ export default function AdminProducts() {
   const [error, setError] = useState<string | null>(null);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const deleteDialogRef = useRef<HTMLDialogElement>(null);
+  const deleteTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [productToEdit, setProductToEdit] = useState<any | null>(null);
 
@@ -81,6 +83,23 @@ export default function AdminProducts() {
     fetchProducts();
   }, [fetchProducts]);
 
+  useEffect(() => {
+    const dialog = deleteDialogRef.current;
+    if (productToDelete && dialog && !dialog.open) dialog.showModal();
+    else if (!productToDelete && dialog?.open) dialog.close();
+  }, [productToDelete]);
+
+  const closeDeleteDialog = () => {
+    const dialog = deleteDialogRef.current;
+    if (dialog?.open) dialog.close();
+    else setProductToDelete(null);
+  };
+
+  const handleDeleteDialogClose = () => {
+    setProductToDelete(null);
+    deleteTriggerRef.current?.focus();
+  };
+
   const handleAddClick = () => {
     setProductToEdit(null);
     setIsFormModalOpen(true);
@@ -125,8 +144,9 @@ export default function AdminProducts() {
           </p>
         </div>
         <button
+          type="button"
           onClick={handleAddClick}
-          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-on-primary rounded-xl font-label-sm text-xs uppercase tracking-wider font-bold hover:bg-primary/90 active:scale-[0.98] transition-all shadow-xs w-full sm:w-auto shrink-0 cursor-pointer"
+          className="min-h-12 flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-on-primary rounded-xl font-label-sm text-xs uppercase tracking-wider font-bold hover:bg-primary/90 active:scale-[0.98] transition-all shadow-xs w-full sm:w-auto shrink-0 cursor-pointer"
         >
           <PlusIcon />
           <span>Add Product</span>
@@ -142,21 +162,26 @@ export default function AdminProducts() {
       {/* Filter / Search Bar */}
       <div className="bg-surface p-3.5 sm:p-4 rounded-2xl border border-outline-variant/60 botanical-shadow flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
         <div className="relative flex-1">
+          <label htmlFor="admin-products-search" className="sr-only">
+            Search products
+          </label>
           <input
-            type="text"
+            id="admin-products-search"
+            name="search"
+            type="search"
             placeholder="Search products by title or category..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant/60 focus:outline-none focus:border-primary text-primary placeholder:text-on-surface-variant/60"
+            className="min-h-12 w-full text-base sm:text-sm px-3.5 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant/60 focus:outline-none focus:border-primary text-primary placeholder:text-on-surface-variant/60"
           />
         </div>
-        <button type="button" aria-pressed={lowStockOnly} onClick={() => setLowStockFilter(!lowStockOnly)} className={`px-3 py-2 rounded-xl text-xs font-mono font-bold whitespace-nowrap ${lowStockOnly ? 'bg-primary text-on-primary' : 'bg-surface-container-low text-on-surface-variant'}`}>Low stock (≤ {LOW_STOCK_THRESHOLD})</button>
-        {lowStockOnly && <button type="button" onClick={() => setLowStockFilter(false)} className="text-xs font-bold text-primary underline underline-offset-4">Clear low-stock filter</button>}
+        <button type="button" aria-pressed={lowStockOnly} onClick={() => setLowStockFilter(!lowStockOnly)} className={`min-h-12 self-start px-3 py-2 rounded-xl text-xs font-mono font-bold whitespace-nowrap ${lowStockOnly ? 'bg-primary text-on-primary' : 'bg-surface-container-low text-on-surface-variant'}`}>Low stock (≤ {LOW_STOCK_THRESHOLD})</button>
+        {lowStockOnly && <button type="button" onClick={() => setLowStockFilter(false)} className="min-h-12 self-start text-xs font-bold text-primary underline underline-offset-4">Clear low-stock filter</button>}
         <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar shrink-0">
           <button
             type="button"
             onClick={() => setSelectedCategory("All")}
-            className={`px-3 py-2 rounded-xl text-xs font-mono font-bold transition-colors whitespace-nowrap cursor-pointer ${
+            className={`min-h-12 px-3 py-2 rounded-xl text-xs font-mono font-bold transition-colors whitespace-nowrap cursor-pointer ${
               selectedCategory === "All"
                 ? "bg-primary text-on-primary"
                 : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container"
@@ -169,7 +194,7 @@ export default function AdminProducts() {
               key={cat}
               type="button"
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-2 rounded-xl text-xs font-mono font-bold transition-colors whitespace-nowrap cursor-pointer ${
+              className={`min-h-12 px-3 py-2 rounded-xl text-xs font-mono font-bold transition-colors whitespace-nowrap cursor-pointer ${
                 selectedCategory === cat
                   ? "bg-primary text-on-primary"
                   : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container"
@@ -254,15 +279,20 @@ export default function AdminProducts() {
               {/* Action Toolbar on Mobile Card */}
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-outline-variant/40">
                 <button
+                  type="button"
                   onClick={() => handleEditClick(product)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-high text-primary hover:bg-surface-container text-xs font-semibold transition-colors cursor-pointer"
+                  className="min-h-12 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-high text-primary hover:bg-surface-container text-xs font-semibold transition-colors cursor-pointer"
                 >
                   <EditIcon />
                   <span>Edit</span>
                 </button>
                 <button
-                  onClick={() => setProductToDelete(product)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-error/10 text-error hover:bg-error/20 text-xs font-semibold transition-colors cursor-pointer"
+                  type="button"
+                  onClick={(event) => {
+                    deleteTriggerRef.current = event.currentTarget;
+                    setProductToDelete(product);
+                  }}
+                  className="min-h-12 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-error/10 text-error hover:bg-error/20 text-xs font-semibold transition-colors cursor-pointer"
                 >
                   <TrashIcon />
                   <span>Delete</span>
@@ -369,16 +399,21 @@ export default function AdminProducts() {
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <button
+                          type="button"
                           onClick={() => handleEditClick(product)}
                           aria-label={`Edit ${product.name}`}
-                          className="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-lg hover:bg-surface-container cursor-pointer"
+                          className="min-h-12 min-w-12 p-2 text-on-surface-variant hover:text-primary transition-colors rounded-lg hover:bg-surface-container cursor-pointer"
                         >
                           <EditIcon />
                         </button>
                         <button
-                          onClick={() => setProductToDelete(product)}
+                          type="button"
+                          onClick={(event) => {
+                            deleteTriggerRef.current = event.currentTarget;
+                            setProductToDelete(product);
+                          }}
                           aria-label={`Delete ${product.name}`}
-                          className="p-2 text-on-surface-variant hover:text-error transition-colors rounded-lg hover:bg-error/10 cursor-pointer"
+                          className="min-h-12 min-w-12 p-2 text-on-surface-variant hover:text-error transition-colors rounded-lg hover:bg-error/10 cursor-pointer"
                         >
                           <TrashIcon />
                         </button>
@@ -392,36 +427,43 @@ export default function AdminProducts() {
         </div>
       </div>
 
-      {productToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-surface p-6 rounded-xl border border-outline-variant botanical-shadow max-w-md w-full animate-in fade-in zoom-in duration-200">
-            <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">
-              Delete Product
-            </h3>
-            <p className="font-body-md text-body-md text-on-surface-variant mb-6">
-              Are you sure you want to delete{" "}
-              <strong>{productToDelete.name}</strong>? This action cannot be
-              undone.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setProductToDelete(null)}
-                disabled={isDeleting}
-                className="px-4 py-2 rounded-lg font-label-sm text-label-sm text-on-surface-variant hover:bg-surface-container transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteConfirm}
-                disabled={isDeleting}
-                className="px-4 py-2 rounded-lg font-label-sm text-label-sm bg-error text-on-error hover:bg-error/90 transition-colors disabled:opacity-50 flex items-center gap-2"
-              >
-                {isDeleting ? "Deleting..." : "Delete"}
-              </button>
-            </div>
-          </div>
+      <dialog
+        ref={deleteDialogRef}
+        aria-labelledby="delete-product-title"
+        aria-describedby="delete-product-description"
+        onClose={handleDeleteDialogClose}
+        onCancel={(event) => {
+          if (isDeleting) event.preventDefault();
+        }}
+        className="hidden open:flex fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md flex-col overflow-y-auto rounded-xl border border-outline-variant bg-surface p-6 text-on-surface botanical-shadow animate-in fade-in zoom-in duration-200 backdrop:bg-black/50 backdrop:backdrop-blur-sm"
+      >
+        <h3 id="delete-product-title" className="font-headline-sm text-headline-sm text-on-surface mb-2">
+          Delete Product
+        </h3>
+        <p id="delete-product-description" className="font-body-md text-body-md text-on-surface-variant mb-6">
+          Are you sure you want to delete{" "}
+          <strong>{productToDelete?.name}</strong>? This action cannot be undone.
+        </p>
+        <div className="flex flex-wrap justify-end gap-3">
+          <button
+            type="button"
+            autoFocus
+            onClick={closeDeleteDialog}
+            disabled={isDeleting}
+            className="min-h-12 px-4 py-2 rounded-lg font-label-sm text-label-sm text-on-surface-variant hover:bg-surface-container transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleDeleteConfirm}
+            disabled={isDeleting}
+            className="min-h-12 px-4 py-2 rounded-lg font-label-sm text-label-sm bg-error text-on-error hover:bg-error/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+          >
+            {isDeleting ? "Deleting..." : "Delete"}
+          </button>
         </div>
-      )}
+      </dialog>
 
       {isFormModalOpen && (
         <ProductFormModal

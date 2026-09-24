@@ -126,32 +126,77 @@ export default function AdminDashboard() {
         ) : metrics.recentOrders.length === 0 ? (
           <p className="p-6 text-center text-sm text-on-surface-variant">No recent orders.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          <>
+          <ul className="md:hidden space-y-3">
+            {metrics.recentOrders.map((order) => (
+              <li key={order.id} className="rounded-xl border border-outline-variant/60 bg-surface-container-low/50 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="break-all font-mono text-sm font-semibold text-primary">{order.public_code}</p>
+                    <p className="mt-1 break-words text-sm text-on-surface">
+                      {order.customer_name || order.customer_instagram || 'Guest customer'}
+                    </p>
+                  </div>
+                  <span className={`max-w-[45%] shrink-0 whitespace-normal break-words rounded-full px-2.5 py-1 text-center text-[10px] leading-tight font-medium ${orderStatusClass(order.status)}`}>
+                    {order.status}
+                  </span>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-3 border-t border-outline-variant/40 pt-3">
+                  <div>
+                    <span className="block text-[10px] uppercase tracking-wider text-on-surface-variant">Date</span>
+                    <time dateTime={order.created_at} className="font-mono text-xs text-on-surface">
+                      {new Date(order.created_at).toLocaleDateString()}
+                    </time>
+                  </div>
+                  <div className="text-right">
+                    <span className="block text-[10px] uppercase tracking-wider text-on-surface-variant">Total</span>
+                    <span className="font-mono text-sm font-medium text-on-surface">{formatNaira(order.total)}</span>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          <div className="hidden overflow-x-auto md:block">
+            <table className="w-full table-fixed text-left border-collapse">
+              <colgroup>
+                <col className="w-[30%]" />
+                <col className="w-[18%]" />
+                <col className="w-[15%]" />
+                <col className="w-[20%]" />
+                <col className="w-[17%]" />
+              </colgroup>
               <thead>
                 <tr className="border-b border-outline-variant/60">
-                  <th className="pb-3 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider">Order ID</th>
-                  <th className="pb-3 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider">Customer</th>
-                  <th className="pb-3 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider">Date</th>
-                  <th className="pb-3 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider">Amount</th>
-                  <th className="pb-3 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider text-right">Status</th>
+                  <th className="pb-3 pr-1 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider break-words">Order ID</th>
+                  <th className="pb-3 pr-1 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider break-words">Customer</th>
+                  <th className="pb-3 pr-1 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider break-words">Date</th>
+                  <th className="pb-3 pr-1 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider break-words">Amount</th>
+                  <th className="pb-3 font-label-sm text-xs text-on-surface-variant uppercase tracking-wider text-right break-words">Status</th>
                 </tr>
               </thead>
               <tbody className="font-body-md text-sm text-on-surface divide-y divide-outline-variant/40">
                 {metrics.recentOrders.map((order) => (
                   <tr key={order.id}>
-                    <td className="py-3.5 font-mono font-semibold text-primary">{order.public_code}</td>
-                    <td className="py-3.5 font-mono text-xs">{order.customer_name || order.customer_instagram || 'Guest customer'}</td>
-                    <td className="py-3.5 text-on-surface-variant text-xs font-mono">{new Date(order.created_at).toLocaleDateString()}</td>
-                    <td className="py-3.5 font-mono font-medium">{formatNaira(order.total)}</td>
-                    <td className="py-3.5 text-right"><span className={`px-2.5 py-1 rounded-full text-xs font-medium ${order.status === 'Cancelled' ? 'bg-error/10 text-error' : order.status === 'Pending Verification' ? 'bg-tertiary-container text-on-tertiary-container' : 'bg-surface-container-high text-on-surface-variant'}`}>{order.status}</span></td>
+                    <td className="py-3.5 pr-1 font-mono font-semibold text-primary break-all">{order.public_code}</td>
+                    <td className="py-3.5 pr-1 font-mono text-xs break-words">{order.customer_name || order.customer_instagram || 'Guest customer'}</td>
+                    <td className="py-3.5 pr-1 text-on-surface-variant text-xs font-mono break-words">{new Date(order.created_at).toLocaleDateString()}</td>
+                    <td className="py-3.5 pr-1 font-mono font-medium break-words">{formatNaira(order.total)}</td>
+                    <td className="py-3.5 text-right"><span className={`inline-block max-w-full whitespace-normal break-words rounded-full px-2.5 py-1 text-xs font-medium ${orderStatusClass(order.status)}`}>{order.status}</span></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
     </div>
   );
+}
+
+function orderStatusClass(status: string): string {
+  if (status === 'Cancelled') return 'bg-error/10 text-error';
+  if (status === 'Pending Verification') return 'bg-tertiary-container text-on-tertiary-container';
+  return 'bg-surface-container-high text-on-surface-variant';
 }

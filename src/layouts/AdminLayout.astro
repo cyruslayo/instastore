@@ -68,7 +68,7 @@ const navigation = [
               <h1 class="font-headline-sm text-sm text-primary font-bold truncate max-w-[200px]">{title.split('|')[0].trim()}</h1>
             </div>
           </div>
-          <a id="view-store-link" href="/s/default-store" target="_blank" rel="noreferrer" class="text-xs font-mono font-bold text-secondary px-2.5 py-1 bg-secondary-container/50 rounded-lg hover:bg-secondary-container transition-colors">
+          <a id="view-store-link" href="#" target="_blank" rel="noreferrer" hidden aria-disabled="true" class="text-xs font-mono font-bold text-secondary px-2.5 py-1 bg-secondary-container/50 rounded-lg hover:bg-secondary-container transition-colors">
             View Store ↗
           </a>
         </header>
@@ -95,13 +95,35 @@ const navigation = [
         });
       }
       const viewStore = document.getElementById('view-store-link');
-      if (viewStore) {
-        getCurrentAdminProfile()
-          .then((profile) => {
-            if (profile) viewStore.setAttribute('href', `/s/${profile.store_slug}`);
-          })
-          .catch(() => {});
+      let profileRequestId = 0;
+
+      async function syncViewStoreLink() {
+        if (!viewStore) return;
+
+        const requestId = ++profileRequestId;
+        try {
+          const profile = await getCurrentAdminProfile();
+          if (requestId !== profileRequestId) return;
+
+          if (!profile) {
+            viewStore.setAttribute('href', '#');
+            viewStore.setAttribute('aria-disabled', 'true');
+            viewStore.hidden = true;
+            return;
+          }
+
+          viewStore.setAttribute('href', `/s/${profile.store_slug}`);
+          viewStore.removeAttribute('aria-disabled');
+          viewStore.hidden = false;
+        } catch {
+          if (requestId === profileRequestId) viewStore.hidden = true;
+        }
       }
+
+      void syncViewStoreLink();
+      window.addEventListener('instastore-admin-auth-changed', () => {
+        void syncViewStoreLink();
+      });
     </script>
     <AdminBottomNav pathname={pathname} client:load />
   </body>

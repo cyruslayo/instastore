@@ -29,6 +29,9 @@ export default function AdminGate({ children }: { children: ReactNode }) {
         );
         await signOut();
       }
+      if (ok) {
+        window.dispatchEvent(new Event('instastore-admin-auth-changed'));
+      }
       setAdmin(ok);
     } catch (err: any) {
       setError(describeAuthError(err));

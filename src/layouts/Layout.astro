@@ -4,7 +4,7 @@ import BottomNav from '@/components/BottomNav';
 import StorefrontFooter from '@/components/storefront/StorefrontFooter';
 import MotionProvider from '@/components/MotionProvider';
 import StorefrontAnalytics from '@/components/storefront/StorefrontAnalytics';
-import { fetchLiveSiteSettings, DEFAULT_SITE_SETTINGS } from '@/lib/siteSettings';
+import { fetchLiveSiteSettings, DEFAULT_SITE_SETTINGS, type SiteSettings } from '@/lib/siteSettings';
 import { getStoreOnPrimary } from '@/lib/storeBranding';
 import '@/styles/global.css';
 
@@ -14,7 +14,7 @@ interface Props {
   pathname: string;
   storeSlug: string;
   storeId: string;
-  primaryColor?: string;
+  initialSettings?: SiteSettings;
   image?: string;
   siteName?: string;
   type?: 'website' | 'article';
@@ -26,7 +26,7 @@ const {
   pathname,
   storeSlug,
   storeId,
-  primaryColor,
+  initialSettings,
   image,
   siteName = 'Storefront',
   type = 'website'
@@ -34,10 +34,11 @@ const {
 
 const siteUrl = Astro.site ? Astro.site.toString().replace(/\/$/, '') : (Astro.url.origin || 'https://instastore.local');
 const canonicalUrl = new URL(pathname, siteUrl).toString();
-let storefrontColor = primaryColor || DEFAULT_SITE_SETTINGS.primaryColor;
-if (!primaryColor) {
-  try { storefrontColor = (await fetchLiveSiteSettings(storeSlug)).primaryColor; } catch { /* Keep safe default. */ }
+let resolvedSettings = initialSettings ?? DEFAULT_SITE_SETTINGS;
+if (!initialSettings) {
+  try { resolvedSettings = await fetchLiveSiteSettings(storeSlug); } catch { /* Keep safe defaults. */ }
 }
+const storefrontColor = resolvedSettings.primaryColor;
 const hex = /^#[0-9a-fA-F]{6}$/.test(storefrontColor) ? storefrontColor : '#18231a';
 const onColor = getStoreOnPrimary(hex);
 const brandStyle = `--store-primary:${hex.toLowerCase()};--store-on-primary:${onColor}`;
@@ -73,13 +74,13 @@ const brandStyle = `--store-primary:${hex.toLowerCase()};--store-on-primary:${on
   </head>
   <body style={brandStyle} class="storefront-theme bg-background text-on-background antialiased selection:bg-secondary-container selection:text-on-secondary-container min-h-screen flex flex-col pb-[var(--storefront-mobile-nav-clearance)] md:pb-0">
     <a href="#content" class="visually-hidden skip-link">Skip to content</a>
-    <Header pathname={pathname} storeSlug={storeSlug} client:load />
+    <Header pathname={pathname} storeSlug={storeSlug} initialSettings={resolvedSettings} client:load />
     <MotionProvider client:load>
       <div id="content" tabindex="-1" class="flex-1 flex flex-col">
         <slot />
       </div>
     </MotionProvider>
-    <StorefrontFooter storeSlug={storeSlug} client:load />
+    <StorefrontFooter initialSettings={resolvedSettings} client:load />
     <StorefrontAnalytics storeId={storeId} storeSlug={storeSlug} pathname={pathname} client:load />
     <BottomNav pathname={pathname} storeSlug={storeSlug} client:load />
 
@@ -102,7 +103,7 @@ const brandStyle = `--store-primary:${hex.toLowerCase()};--store-on-primary:${on
 
               window.scrollTo({
                 top: Math.max(0, targetY),
-                behavior: 'smooth'
+                behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
               });
             }, 60);
           } catch (e) {

@@ -1,5 +1,7 @@
 const DARK_FOREGROUND = "#18231a";
 const LIGHT_FOREGROUND = "#ffffff";
+const BLACK_FOREGROUND = "#000000";
+const MINIMUM_TEXT_CONTRAST = 4.5;
 
 function relativeLuminance(hex: string): number {
   const channels = hex.slice(1).match(/.{2}/g)!.map((channel) => parseInt(channel, 16) / 255);
@@ -16,7 +18,9 @@ function contrastRatio(first: number, second: number): number {
 export function getStoreOnPrimary(hex: string): string {
   if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return LIGHT_FOREGROUND;
   const background = relativeLuminance(hex);
-  return contrastRatio(background, relativeLuminance(DARK_FOREGROUND)) >= contrastRatio(background, relativeLuminance(LIGHT_FOREGROUND))
-    ? DARK_FOREGROUND
-    : LIGHT_FOREGROUND;
+  if (contrastRatio(background, relativeLuminance(DARK_FOREGROUND)) >= MINIMUM_TEXT_CONTRAST)
+    return DARK_FOREGROUND;
+  if (contrastRatio(background, relativeLuminance(LIGHT_FOREGROUND)) >= MINIMUM_TEXT_CONTRAST)
+    return LIGHT_FOREGROUND;
+  return BLACK_FOREGROUND;
 }

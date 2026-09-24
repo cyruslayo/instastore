@@ -48,9 +48,6 @@
   --color-on-tertiary-fixed-variant: #4a4640;
   --color-background: #faf9f7;
   --color-on-background: #1a1c1b;
-  --color-store-primary: var(--store-primary, #18231a);
-  --color-store-on-primary: var(--store-on-primary, #ffffff);
-
   --font-display-lg: 'Bodoni Moda', serif;
   --font-display-lg-mobile: 'Bodoni Moda', serif;
   --font-display-md: 'Bodoni Moda', serif;
@@ -120,6 +117,11 @@
   --spacing-stack-md: 16px;
   --spacing-stack-lg: 32px;
   --spacing-section-gap: clamp(3rem, 8vw, 5rem);
+}
+
+@theme inline {
+  --color-store-primary: var(--store-primary, #18231a);
+  --color-store-on-primary: var(--store-on-primary, #ffffff);
 }
 
 :root {
@@ -210,6 +212,10 @@ h4 {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
   *,
   ::before,
   ::after {

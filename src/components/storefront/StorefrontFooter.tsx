@@ -1,8 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import {
-  DEFAULT_SITE_SETTINGS,
-  fetchLiveSiteSettings,
   type SiteSettings,
 } from "@/lib/siteSettings";
 import { CONSENT_VERSION, readConsent, saveConsent, type ConsentRecord } from "@/lib/analytics/consent";
@@ -20,8 +18,8 @@ function whatsappUrl(value: string): string | null {
   return digits ? `https://wa.me/${digits}` : null;
 }
 
-export default function StorefrontFooter({ storeSlug }: { storeSlug: string }) {
-  const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
+export default function StorefrontFooter({ initialSettings }: { initialSettings: SiteSettings }) {
+  const [settings] = useState<SiteSettings>(initialSettings);
   const [consent, setConsent] = useState<ConsentRecord | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [customize, setCustomize] = useState(false);
@@ -35,10 +33,7 @@ export default function StorefrontFooter({ storeSlug }: { storeSlug: string }) {
     setMarketing(currentConsent?.marketing ?? false);
     setIsOpen(!currentConsent);
     syncAnalyticsConsent(currentConsent ?? { version: CONSENT_VERSION, analytics: false, marketing: false, updatedAt: new Date().toISOString() });
-    fetchLiveSiteSettings(storeSlug)
-      .then(setSettings)
-      .catch(() => undefined);
-  }, [storeSlug]);
+  }, []);
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;

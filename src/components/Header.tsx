@@ -1,30 +1,25 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useStore } from "@nanostores/react";
 import { cartCountFor } from "@/store/cart";
 import { useHydrated } from "@/lib/useHydrated";
 import { storePath } from "@/lib/storePaths";
 import {
-  DEFAULT_SITE_SETTINGS,
-  fetchLiveSiteSettings,
   type SiteSettings,
 } from "@/lib/siteSettings";
 
 export default function Header({
   pathname,
   storeSlug,
+  initialSettings,
 }: {
   pathname: string;
   storeSlug: string;
+  initialSettings: SiteSettings;
 }) {
   const hydrated = useHydrated();
   const count = useStore(cartCountFor(storeSlug));
-  const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
-  useEffect(() => {
-    fetchLiveSiteSettings(storeSlug)
-      .then(setSettings)
-      .catch(() => undefined);
-  }, [storeSlug]);
+  const [settings] = useState<SiteSettings>(initialSettings);
   const homePath = storePath(storeSlug);
   const cartPath = storePath(storeSlug, "cart");
   const checkoutPath = storePath(storeSlug, "checkout");

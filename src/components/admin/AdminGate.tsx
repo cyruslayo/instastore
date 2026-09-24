@@ -52,27 +52,37 @@ export default function AdminGate({ children }: { children: ReactNode }) {
         </div>
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="font-label-sm text-xs uppercase tracking-wider text-on-surface-variant font-bold">Email</label>
+            <label htmlFor="admin-email" className="font-label-sm text-xs uppercase tracking-wider text-on-surface-variant font-bold">Email</label>
             <input
+              id="admin-email"
+              name="email"
               type="email"
+              autoComplete="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              inputMode="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 bg-surface-container-low border border-outline-variant rounded-xl text-primary text-sm focus:outline-none focus:border-primary"
+              className="min-h-12 w-full p-3 bg-surface-container-low border border-outline-variant rounded-xl text-primary text-body-md focus:outline-none focus:border-primary"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="font-label-sm text-xs uppercase tracking-wider text-on-surface-variant font-bold">Password</label>
+            <label htmlFor="admin-password" className="font-label-sm text-xs uppercase tracking-wider text-on-surface-variant font-bold">Password</label>
             <input
+              id="admin-password"
+              name="password"
               type="password"
+              autoComplete="current-password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-3 bg-surface-container-low border border-outline-variant rounded-xl text-primary text-sm focus:outline-none focus:border-primary"
+              className="min-h-12 w-full p-3 bg-surface-container-low border border-outline-variant rounded-xl text-primary text-body-md focus:outline-none focus:border-primary"
             />
           </div>
           {error && <p role="alert" className="text-error font-body-sm text-xs p-3 bg-error/10 rounded-xl">{error}</p>}
-          <button type="submit" className="w-full bg-primary text-on-primary py-3 px-4 rounded-xl font-mono text-xs uppercase tracking-wider font-bold hover:bg-primary/90 active:scale-[0.98] transition-all cursor-pointer shadow-xs">
+          <button type="submit" className="min-h-12 w-full bg-primary text-on-primary py-3 px-4 rounded-xl font-mono text-xs uppercase tracking-wider font-bold hover:bg-primary/90 active:scale-[0.98] transition-all cursor-pointer shadow-xs">
             Sign In to Store Admin
           </button>
         </form>

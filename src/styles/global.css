@@ -122,9 +122,24 @@
   --spacing-section-gap: clamp(3rem, 8vw, 5rem);
 }
 
+:root {
+  /* The four-link row measures 73px; the navigation adds its safe-area inset separately. */
+  --storefront-mobile-nav-height: 4.5625rem;
+  --storefront-mobile-nav-clearance: calc(
+    var(--storefront-mobile-nav-height) + 0.5rem + env(safe-area-inset-bottom, 0px)
+  );
+}
+
 html {
   scroll-behavior: smooth;
   scroll-padding-top: calc(5.5rem + env(safe-area-inset-top, 0px));
+  scroll-padding-bottom: var(--storefront-mobile-nav-clearance);
+}
+
+@media (min-width: 48rem) {
+  html {
+    scroll-padding-bottom: 0;
+  }
 }
 
 body {

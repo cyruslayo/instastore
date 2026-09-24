@@ -61,11 +61,22 @@ export default function ProductFormModal({
   const [newGalleryImages, setNewGalleryImages] = useState<File[]>([]);
   const [galleryPreviewUrls, setGalleryPreviewUrls] = useState<string[]>([]);
   const galleryPreviewRef = useRef<string[]>([]);
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isAddingNewCategory, setIsAddingNewCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
+
+  const closeDialog = () => {
+    if (dialogRef.current?.open) dialogRef.current.close();
+    else onClose();
+  };
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (isOpen && dialog && !dialog.open) dialog.showModal();
+  }, [isOpen]);
 
   const revokePreview = () => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -251,7 +262,7 @@ export default function ProductFormModal({
         try { await deleteManagedProductImage(removedUrl); } catch (cleanupError) { cleanupFailed = true; console.warn("Saved product, but an old managed image could not be cleaned up.", cleanupError); }
       }
       onSaved();
-      onClose();
+      closeDialog();
       if (cleanupFailed) window.alert("Product saved, but one or more removed images could not be cleaned up.");
     } catch (cause) {
       if (!savedSuccessfully) for (const newUrl of [uploadedImage, ...uploadedGalleryImages].filter((url): url is string => Boolean(url))) {
@@ -276,20 +287,27 @@ export default function ProductFormModal({
   const imageToShow =
     previewUrl || (formData.removeImage ? null : formData.currentImage);
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 overflow-y-auto">
-      <div className="bg-surface rounded-t-3xl sm:rounded-2xl border border-outline-variant botanical-shadow max-w-2xl w-full flex flex-col max-h-[92dvh] animate-in fade-in sm:zoom-in duration-200">
+    <dialog
+      ref={dialogRef}
+      aria-labelledby="product-form-title"
+      aria-modal="true"
+      onClose={onClose}
+      className="hidden open:flex fixed inset-x-0 bottom-0 top-auto m-0 max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl border border-outline-variant bg-surface p-0 text-on-surface botanical-shadow animate-in fade-in duration-200 backdrop:bg-black/60 backdrop:backdrop-blur-xs sm:inset-0 sm:m-auto sm:rounded-2xl sm:zoom-in"
+    >
+      <div className="flex min-h-0 flex-1 flex-col">
         <div className="flex justify-between items-center px-5 py-4 sm:p-6 border-b border-outline-variant shrink-0">
           <div>
             <span className="font-mono text-[10px] uppercase tracking-wider text-secondary font-bold block">
               Catalog Management
             </span>
-            <h3 className="font-headline-sm text-base sm:text-headline-sm text-on-surface font-bold">
+            <h3 id="product-form-title" className="font-headline-sm text-base sm:text-headline-sm text-on-surface font-bold">
               {product ? "Edit Product" : "Add New Product"}
             </h3>
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={closeDialog}
+            autoFocus
             aria-label="Close"
             className="touch-target flex items-center justify-center p-2 text-on-surface-variant hover:bg-surface-container rounded-full"
           >
@@ -301,7 +319,7 @@ export default function ProductFormModal({
             event.preventDefault();
             save();
           }}
-          className="px-5 py-4 sm:p-6 overflow-y-auto overscroll-contain flex-1 space-y-5"
+          className="min-h-0 px-5 py-4 sm:p-6 overflow-y-auto overscroll-contain flex-1 space-y-5"
         >
           {error && (
             <div
@@ -503,12 +521,12 @@ export default function ProductFormModal({
             </label>
           </div>
         </form>
-        <div className="p-6 border-t border-outline-variant flex justify-end gap-3 bg-surface-container-low rounded-b-2xl">
+        <div className="p-6 border-t border-outline-variant flex justify-end gap-3 bg-surface-container-low rounded-b-2xl pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
           <button
             type="button"
-            onClick={onClose}
+            onClick={closeDialog}
             disabled={isSaving}
-            className="px-6 py-2.5 rounded-lg text-on-surface-variant"
+            className="min-h-12 px-6 py-2.5 rounded-lg text-on-surface-variant"
           >
             Cancel
           </button>
@@ -516,13 +534,13 @@ export default function ProductFormModal({
             type="button"
             onClick={save}
             disabled={isSaving}
-            className="px-6 py-2.5 rounded-lg bg-primary text-on-primary disabled:opacity-50"
+            className="min-h-12 px-6 py-2.5 rounded-lg bg-primary text-on-primary disabled:opacity-50"
           >
             {isSaving ? "Saving..." : "Save Product"}
           </button>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }
 const inputClass =

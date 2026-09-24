@@ -70,7 +70,7 @@ export default function ProductDetailIsland({ product, storeId, storeSlug }: { p
                 <span className="w-12 text-center font-label-lg text-label-lg text-on-surface" aria-live="polite">{quantity}</span>
                 <button type="button" disabled={!available || quantity >= product.inventory} onClick={() => setQuantity(Math.min(product.inventory, quantity + 1))} aria-label="Increase quantity" className="touch-target w-10 h-10 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors rounded-full hover:bg-surface-container disabled:opacity-40"><PlusIcon /></button>
               </div>
-              <button type="button" disabled={!available} onClick={handleAddToCart} className="flex-1 bg-store-primary text-store-on-primary rounded-full font-label-lg text-label-lg flex items-center justify-center gap-2 hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><BagIcon />{available ? "Add to Bag" : "Sold Out"}</button>
+              <button type="button" disabled={!available} onClick={handleAddToCart} className="touch-target min-h-12 flex-1 bg-store-primary text-store-on-primary rounded-full font-label-lg text-label-lg flex items-center justify-center gap-2 hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><BagIcon />{available ? "Add to Bag" : "Sold Out"}</button>
             </div>
             {!available && <p className="font-body-sm text-body-sm text-error">Currently unavailable.</p>}
             {addedNotice && <p className="font-body-sm text-body-sm text-secondary flex items-center gap-1.5 animate-in fade-in"><CheckIcon /> Added to your bag.</p>}

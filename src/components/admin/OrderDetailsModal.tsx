@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { formatNaira } from "@/lib/utils";
 import { nextOrderStatuses, ORDER_ACTION_LABELS } from "@/lib/orderWorkflow";
@@ -24,10 +24,21 @@ export default function OrderDetailsModal({
   const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
   const [receiptLoading, setReceiptLoading] = useState(false);
   const [receiptError, setReceiptError] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const receiptPath = order?.receipt_path;
   const isPdfReceipt =
     typeof receiptPath === "string" &&
     receiptPath.toLowerCase().endsWith(".pdf");
+
+  const closeDialog = () => {
+    if (dialogRef.current?.open) dialogRef.current.close();
+    else onClose();
+  };
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (isOpen && order && dialog && !dialog.open) dialog.showModal();
+  }, [isOpen, order]);
 
   useEffect(() => {
     let cancelled = false;
@@ -100,7 +111,7 @@ export default function OrderDetailsModal({
       const { setOrderStatus } = await import("@/lib/orders");
       await setOrderStatus(order.id, nextStatus);
       await onSaved();
-      onClose();
+      closeDialog();
     } catch (err: any) {
       console.error("Error updating order: ", err);
       setError(err.message || "Failed to update order.");
@@ -116,20 +127,27 @@ export default function OrderDetailsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 overflow-y-auto">
-      <div className="bg-surface rounded-t-3xl sm:rounded-2xl border border-outline-variant botanical-shadow max-w-xl w-full flex flex-col max-h-[92dvh] animate-in fade-in sm:zoom-in duration-200">
+    <dialog
+      ref={dialogRef}
+      aria-labelledby="order-details-title"
+      aria-modal="true"
+      onClose={onClose}
+      className="hidden open:flex fixed inset-x-0 bottom-0 top-auto m-0 max-h-[92dvh] w-full max-w-xl flex-col overflow-hidden rounded-t-3xl border border-outline-variant bg-surface p-0 text-on-surface botanical-shadow animate-in fade-in duration-200 backdrop:bg-black/60 backdrop:backdrop-blur-xs sm:inset-0 sm:m-auto sm:rounded-2xl sm:zoom-in"
+    >
+      <div className="flex min-h-0 flex-1 flex-col">
         <div className="flex justify-between items-center px-5 py-4 sm:p-6 border-b border-outline-variant shrink-0">
           <div>
             <span className="font-mono text-[10px] uppercase tracking-wider text-secondary font-bold block">
               Order Fulfillment
             </span>
-            <h3 className="font-headline-sm text-base sm:text-headline-sm text-on-surface font-bold">
+            <h3 id="order-details-title" className="font-headline-sm text-base sm:text-headline-sm text-on-surface font-bold">
               Order #{order.public_code || order.id}
             </h3>
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={closeDialog}
+            autoFocus
             aria-label="Close"
             className="touch-target flex items-center justify-center p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors cursor-pointer"
           >
@@ -137,7 +155,7 @@ export default function OrderDetailsModal({
           </button>
         </div>
 
-        <div className="px-5 py-4 sm:p-6 overflow-y-auto overscroll-contain flex-1 space-y-6">
+        <div className="min-h-0 px-5 py-4 sm:p-6 overflow-y-auto overscroll-contain flex-1 space-y-6">
           {error && (
             <div className="p-3.5 bg-error/10 text-error rounded-xl font-body-sm text-xs sm:text-sm font-medium">
               {error}
@@ -355,7 +373,7 @@ export default function OrderDetailsModal({
                   key={s}
                   type="button"
                   onClick={() => setNextStatus(s)}
-                  className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold border transition-colors cursor-pointer ${
+                  className={`min-h-12 px-3 py-1.5 rounded-xl font-mono text-xs font-bold border transition-colors cursor-pointer ${
                     nextStatus === s
                       ? "bg-primary text-on-primary border-primary shadow-xs"
                       : "bg-surface border-outline-variant/70 text-on-surface hover:bg-surface-container-low"
@@ -368,24 +386,24 @@ export default function OrderDetailsModal({
           </div>
         </div>
 
-        <div className="px-5 py-4 sm:p-6 border-t border-outline-variant flex justify-end gap-3 bg-surface-container-low rounded-b-3xl sm:rounded-b-2xl shrink-0">
+        <div className="px-5 py-4 sm:p-6 border-t border-outline-variant flex justify-end gap-3 bg-surface-container-low rounded-b-3xl sm:rounded-b-2xl shrink-0 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
           <button
             type="button"
-            onClick={onClose}
+            onClick={closeDialog}
             disabled={isSaving}
-            className="px-5 py-2.5 rounded-xl font-label-sm text-xs uppercase tracking-wider font-bold text-on-surface-variant hover:bg-surface-container transition-colors disabled:opacity-50 cursor-pointer"
+            className="min-h-12 px-5 py-2.5 rounded-xl font-label-sm text-xs uppercase tracking-wider font-bold text-on-surface-variant hover:bg-surface-container transition-colors disabled:opacity-50 cursor-pointer"
           >
             Cancel
           </button>
           <button
             onClick={handleUpdateStatus}
             disabled={isSaving || nextStatus === null}
-            className="px-6 py-2.5 rounded-xl font-label-sm text-xs uppercase tracking-wider font-bold bg-primary text-on-primary hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-xs"
+            className="min-h-12 px-6 py-2.5 rounded-xl font-label-sm text-xs uppercase tracking-wider font-bold bg-primary text-on-primary hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-xs"
           >
             {isSaving ? "Updating..." : nextStatus ? ORDER_ACTION_LABELS[nextStatus] : "Choose an action"}
           </button>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }

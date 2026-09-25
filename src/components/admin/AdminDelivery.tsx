@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { MapPin, Pencil, Plus, Trash2 } from "lucide-react";
 import { formatNaira } from "@/lib/utils";
 import {
@@ -49,6 +49,8 @@ export default function AdminDelivery() {
   const [saving, setSaving] = useState(false);
   const [zoneToDelete, setZoneToDelete] = useState<DeliveryZone | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const deleteDialogRef = useRef<HTMLDialogElement>(null);
+  const deleteTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -67,6 +69,23 @@ export default function AdminDelivery() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    const dialog = deleteDialogRef.current;
+    if (zoneToDelete && dialog && !dialog.open) dialog.showModal();
+    else if (!zoneToDelete && dialog?.open) dialog.close();
+  }, [zoneToDelete]);
+
+  const closeDeleteDialog = () => {
+    if (deleting) return;
+    if (deleteDialogRef.current?.open) deleteDialogRef.current.close();
+    else setZoneToDelete(null);
+  };
+
+  const handleDeleteDialogClose = () => {
+    setZoneToDelete(null);
+    deleteTriggerRef.current?.focus();
+  };
 
   const openAdd = () => {
     setEditing(null);
@@ -174,7 +193,7 @@ export default function AdminDelivery() {
         <button
           type="button"
           onClick={openAdd}
-          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-on-primary rounded-xl font-label-sm text-xs uppercase tracking-wider font-bold hover:bg-primary/90 active:scale-[0.98] transition-all w-full sm:w-auto shrink-0 cursor-pointer"
+          className="min-h-11 pointer-coarse:min-h-12 flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-on-primary rounded-xl font-label-sm text-xs uppercase tracking-wider font-bold hover:bg-primary/90 active:scale-[0.98] transition-all w-full sm:w-auto shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Add zone</span>
@@ -190,7 +209,7 @@ export default function AdminDelivery() {
       {formOpen && (
         <form
           onSubmit={save}
-          className="bg-surface rounded-2xl border border-outline-variant/60 p-5 sm:p-6 botanical-shadow max-w-3xl space-y-5"
+          className="@container bg-surface rounded-2xl border border-outline-variant/60 p-5 sm:p-6 botanical-shadow max-w-3xl space-y-5"
         >
           <div className="flex items-center justify-between">
             <h3 className="font-headline-sm text-base sm:text-headline-sm text-primary font-bold">
@@ -199,7 +218,7 @@ export default function AdminDelivery() {
             <button
               type="button"
               onClick={closeForm}
-              className="text-xs font-mono text-on-surface-variant hover:text-primary"
+              className="min-h-11 px-3 text-xs font-mono text-on-surface-variant hover:text-primary"
             >
               Cancel
             </button>
@@ -209,7 +228,7 @@ export default function AdminDelivery() {
               {error}
             </p>
           )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 @min-[560px]:grid-cols-2 gap-4">
             <label className="space-y-1.5">
               <span className="font-label-sm text-xs uppercase tracking-wider text-primary font-bold">City</span>
               <select
@@ -298,7 +317,7 @@ export default function AdminDelivery() {
           <button
             type="submit"
             disabled={saving}
-            className="px-8 py-3 bg-primary text-on-primary rounded-xl font-label-sm text-xs uppercase tracking-wider font-bold disabled:opacity-50"
+            className="min-h-11 pointer-coarse:min-h-12 px-8 py-3 bg-primary text-on-primary rounded-xl font-label-sm text-xs uppercase tracking-wider font-bold disabled:opacity-50"
           >
             {saving ? "Saving..." : editing ? "Save zone" : "Add zone"}
           </button>
@@ -366,7 +385,7 @@ export default function AdminDelivery() {
                 <button
                   type="button"
                   onClick={() => toggleActive(zone)}
-                  className="px-3 py-1.5 rounded-lg bg-surface-container-high text-primary hover:bg-surface-container text-xs font-semibold transition-colors cursor-pointer"
+                  className="min-h-11 pointer-coarse:min-h-12 px-3 py-1.5 rounded-lg bg-surface-container-high text-primary hover:bg-surface-container text-xs font-semibold transition-colors cursor-pointer"
                 >
                   {zone.is_active ? "Deactivate" : "Activate"}
                 </button>
@@ -374,15 +393,18 @@ export default function AdminDelivery() {
                   type="button"
                   onClick={() => openEdit(zone)}
                   aria-label={`Edit ${zone.name}`}
-                  className="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-lg hover:bg-surface-container cursor-pointer"
+                  className="min-h-11 min-w-11 pointer-coarse:min-h-12 pointer-coarse:min-w-12 p-2 text-on-surface-variant hover:text-primary transition-colors rounded-lg hover:bg-surface-container cursor-pointer"
                 >
                   <Pencil className="w-4 h-4" />
                 </button>
                 <button
                   type="button"
-                  onClick={() => setZoneToDelete(zone)}
+                  onClick={(event) => {
+                    deleteTriggerRef.current = event.currentTarget;
+                    setZoneToDelete(zone);
+                  }}
                   aria-label={`Delete ${zone.name}`}
-                  className="p-2 text-on-surface-variant hover:text-error transition-colors rounded-lg hover:bg-error/10 cursor-pointer"
+                  className="min-h-11 min-w-11 pointer-coarse:min-h-12 pointer-coarse:min-w-12 p-2 text-on-surface-variant hover:text-error transition-colors rounded-lg hover:bg-error/10 cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -392,37 +414,43 @@ export default function AdminDelivery() {
         </div>
       )}
 
-      {zoneToDelete && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-surface p-6 rounded-xl border border-outline-variant botanical-shadow max-w-md w-full">
-            <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">
-              Delete zone
-            </h3>
-            <p className="font-body-md text-body-md text-on-surface-variant mb-6">
-              Delete <strong>{zoneToDelete.name}</strong>? Existing orders keep their saved
-              delivery details. This cannot be undone.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setZoneToDelete(null)}
-                disabled={deleting}
-                className="px-4 py-2 rounded-lg font-label-sm text-label-sm text-on-surface-variant hover:bg-surface-container transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={confirmDelete}
-                disabled={deleting}
-                className="px-4 py-2 rounded-lg font-label-sm text-label-sm bg-error text-on-error hover:bg-error/90 transition-colors disabled:opacity-50"
-              >
-                {deleting ? "Deleting..." : "Delete"}
-              </button>
-            </div>
-          </div>
+      <dialog
+        ref={deleteDialogRef}
+        aria-labelledby="delete-zone-title"
+        aria-describedby="delete-zone-description"
+        onClose={handleDeleteDialogClose}
+        onCancel={(event) => {
+          if (deleting) event.preventDefault();
+        }}
+        className="hidden open:flex fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md flex-col overflow-y-auto rounded-xl border border-outline-variant bg-surface p-6 text-on-surface botanical-shadow backdrop:bg-black/50 backdrop:backdrop-blur-sm"
+      >
+        <h3 id="delete-zone-title" className="font-headline-sm text-headline-sm text-on-surface mb-2">
+          Delete zone
+        </h3>
+        <p id="delete-zone-description" className="font-body-md text-body-md text-on-surface-variant mb-6">
+          Delete <strong>{zoneToDelete?.name}</strong>? Existing orders keep their saved
+          delivery details. This cannot be undone.
+        </p>
+        <div className="mt-auto flex flex-wrap justify-end gap-3">
+          <button
+            type="button"
+            autoFocus
+            onClick={closeDeleteDialog}
+            disabled={deleting}
+            className="min-h-11 px-4 py-2 rounded-lg font-label-sm text-label-sm text-on-surface-variant hover:bg-surface-container transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={confirmDelete}
+            disabled={deleting}
+            className="min-h-11 px-4 py-2 rounded-lg font-label-sm text-label-sm bg-error text-on-error hover:bg-error/90 transition-colors disabled:opacity-50"
+          >
+            {deleting ? "Deleting..." : "Delete"}
+          </button>
         </div>
-      )}
+      </dialog>
     </div>
   );
 }

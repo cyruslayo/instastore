@@ -115,7 +115,7 @@ export default function AdminSiteContent() {
             key={id}
             type="button"
             onClick={() => setActiveTab(id)}
-            className={`px-4 py-2.5 rounded-xl font-label-sm text-xs uppercase tracking-wider font-bold flex items-center gap-2 ${activeTab === id ? "bg-primary text-on-primary" : "border border-outline-variant/60 text-primary"}`}
+            className={`min-h-11 px-4 py-2.5 rounded-xl font-label-sm text-xs uppercase tracking-wider font-bold flex items-center gap-2 ${activeTab === id ? "bg-primary text-on-primary" : "border border-outline-variant/60 text-primary"}`}
           >
             <Icon className="w-4 h-4" />
             {label}
@@ -246,7 +246,7 @@ export default function AdminSiteContent() {
         <button
           type="submit"
           disabled={saving || !liveSettingsLoaded}
-          className="px-8 py-3 bg-primary text-on-primary rounded-xl font-label-sm text-xs uppercase tracking-wider font-bold"
+          className="min-h-11 px-8 py-3 bg-primary text-on-primary rounded-xl font-label-sm text-xs uppercase tracking-wider font-bold"
         >
           {saving ? "Saving..." : "Save Store Settings"}
         </button>

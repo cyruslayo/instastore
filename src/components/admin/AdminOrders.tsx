@@ -101,7 +101,7 @@ export default function AdminOrders() {
         </div>
 
         {/* Status Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-1">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
           {(['All', ...ORDER_STATUSES] as OrderStatusFilter[]).map((s) => (
             <button
               key={s}
@@ -120,7 +120,7 @@ export default function AdminOrders() {
       </div>
 
       {/* Mobile Card List (< md screens) */}
-      <div className="md:hidden space-y-3">
+      <div className="@min-[900px]:hidden space-y-3">
         {loading ? (
           <div className="p-8 text-center text-on-surface-variant text-sm bg-surface rounded-2xl border border-outline-variant">
             Loading orders...
@@ -192,7 +192,7 @@ export default function AdminOrders() {
       </div>
 
       {/* Desktop Table (>= md screens) */}
-      <div className="hidden md:block bg-surface rounded-2xl border border-outline-variant overflow-hidden botanical-shadow">
+      <div className="hidden @min-[900px]:block bg-surface rounded-2xl border border-outline-variant overflow-hidden botanical-shadow">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead className="bg-surface-container-low">

@@ -127,7 +127,7 @@ export default function AdminDashboard() {
           <p className="p-6 text-center text-sm text-on-surface-variant">No recent orders.</p>
         ) : (
           <>
-          <ul className="md:hidden space-y-3">
+          <ul className="@min-[900px]:hidden space-y-3">
             {metrics.recentOrders.map((order) => (
               <li key={order.id} className="rounded-xl border border-outline-variant/60 bg-surface-container-low/50 p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -157,7 +157,7 @@ export default function AdminDashboard() {
             ))}
           </ul>
 
-          <div className="hidden overflow-x-auto md:block">
+          <div className="hidden overflow-x-auto @min-[900px]:block">
             <table className="w-full table-fixed text-left border-collapse">
               <colgroup>
                 <col className="w-[30%]" />

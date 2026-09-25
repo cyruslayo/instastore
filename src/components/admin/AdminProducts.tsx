@@ -160,8 +160,8 @@ export default function AdminProducts() {
       )}
 
       {/* Filter / Search Bar */}
-      <div className="bg-surface p-3.5 sm:p-4 rounded-2xl border border-outline-variant/60 botanical-shadow flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-        <div className="relative flex-1">
+      <div className="bg-surface p-3.5 sm:p-4 rounded-2xl border border-outline-variant/60 botanical-shadow flex flex-col @min-[900px]:flex-row items-stretch @min-[900px]:items-center gap-3">
+        <div className="relative min-w-0 flex-1">
           <label htmlFor="admin-products-search" className="sr-only">
             Search products
           </label>
@@ -177,7 +177,7 @@ export default function AdminProducts() {
         </div>
         <button type="button" aria-pressed={lowStockOnly} onClick={() => setLowStockFilter(!lowStockOnly)} className={`min-h-12 self-start px-3 py-2 rounded-xl text-xs font-mono font-bold whitespace-nowrap ${lowStockOnly ? 'bg-primary text-on-primary' : 'bg-surface-container-low text-on-surface-variant'}`}>Low stock (≤ {LOW_STOCK_THRESHOLD})</button>
         {lowStockOnly && <button type="button" onClick={() => setLowStockFilter(false)} className="min-h-12 self-start text-xs font-bold text-primary underline underline-offset-4">Clear low-stock filter</button>}
-        <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar shrink-0">
+        <div className="flex min-w-0 items-center gap-2 overflow-x-auto hide-scrollbar">
           <button
             type="button"
             onClick={() => setSelectedCategory("All")}
@@ -207,7 +207,7 @@ export default function AdminProducts() {
       </div>
 
       {/* Mobile Card List (< md screens) */}
-      <div className="md:hidden space-y-3">
+      <div className="@min-[900px]:hidden space-y-3">
         {loading ? (
           <div className="p-8 text-center text-on-surface-variant text-sm bg-surface rounded-2xl border border-outline-variant">
             Loading products...
@@ -304,7 +304,7 @@ export default function AdminProducts() {
       </div>
 
       {/* Desktop Table (>= md screens) */}
-      <div className="hidden md:block bg-surface rounded-2xl border border-outline-variant overflow-hidden botanical-shadow">
+      <div className="hidden @min-[900px]:block bg-surface rounded-2xl border border-outline-variant overflow-hidden botanical-shadow">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead className="bg-surface-container-low">

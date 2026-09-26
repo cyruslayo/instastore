@@ -21,6 +21,19 @@ This is a one-developer checklist for an authorized launch. The current T09 stag
 11. Inspect Worker logs/observability and Supabase Auth, API, database and Storage logs for the verification window. Check that analytics network requests are absent before consent and after rejection, and present only after Analytics consent if Umami is part of launch. Analytics outages must not block commerce.
 12. Record the deployed commit SHA, target environment, smoke result, test-order cleanup, and any unresolved launch gates in the release record. Create a launch tag only after the owner accepts the real production launch.
 
+## Migration 0017 verification (payment fact and consent metadata)
+
+Apply `0017_payment_verification_fact.sql` to the verified target as a reviewed forward migration only (no `db push` of the whole chain, `db reset`, or `migration repair`). Then verify on the real project with a controlled test order:
+
+- New checkout succeeds; `orders.attribution` contains `consent_version = '2'`, `consent_received_at`, and `consent_store_id` equal to the order's `store_id` when a choice was made. A forged `consent_store_id` is dropped.
+- First `Pending Verification → Processing`: `payment_verified_at` and `payment_event_id` are set once. Repeating the call, or two simultaneous calls, leaves both unchanged.
+- Cancel before verification: both remain null; inventory restores once.
+- Verify then cancel: both are kept; no second fact is created.
+- Pre-existing orders keep null payment fields (no backfill).
+- Merchant A cannot read merchant B's orders; anon cannot read orders or execute `set_order_status`; a forged client total is still rejected.
+- `get_order_status` responses do not include payment or attribution fields; tracking still works.
+- Consent: choosing on store A does not apply on store B; with Marketing only, no Umami request occurs; with Umami blocked, checkout still completes.
+
 ## Rollback and database issues
 
 - For an application regression, identify the last known-good commit, check out/build that commit, and redeploy it through the normal Worker process. Record the commit used.

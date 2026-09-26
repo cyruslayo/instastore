@@ -22,7 +22,7 @@ and independently reviewable.
 | In Progress | T09  | Launch hardening                  |
 | Next        | T10  | First merchant cohort             |
 | Later    | T11  | Self-service merchant signup      |
-| Later    | T12  | Meta Pixel and CAPI               |
+| Later    | T12  | Meta Pixel and CAPI (foundation built; Meta not live — see [META_FOUNDATION.md](META_FOUNDATION.md)) |
 | Later    | T13  | Merchant intelligence             |
 | Later    | T14  | Product variants                  |
 | Later    | T15  | Promotions and coupons            |

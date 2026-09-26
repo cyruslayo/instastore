@@ -74,7 +74,7 @@ The `/` platform homepage is intentionally small and supports assisted onboardin
 - `products`: `id`, `store_id`, `name`, `slug`, `description`, `price`, nullable presentation-only `compare_at_price` (must exceed `price`), `inventory`, `category`, primary `image`, up to four ordered `gallery_images`, `sku`, `featured`, `is_active`, `created_at`, `updated_at`. Product slugs are unique per store (`unique (store_id, slug)`), so two merchants may use the same slug. Checkout trusts `price`, never `compare_at_price`.
 - `store_settings`: one row per store, primary key `store_id`, holding store name, tagline, description, logo URL, hero image URL, six-digit hex primary brand color, currency (`NGN`), bank details, and announcement. `delivery_fee` is deprecated (kept for now, no longer read by checkout).
 - `delivery_zones`: `id`, `store_id` (references `stores`, cascade delete), `city` (`Abuja` | `Lagos`), `name`, `provider`, `fee`, `estimate`, `note`, `is_active`, `sort_order`, `created_at`, `updated_at`; unique on `(store_id, city, lower(btrim(name)))`, so a merchant may reuse a zone name across cities. Public and merchant zone lists order by `city`, then `sort_order`, then `name`.
-- `orders`: `id`, `store_id`, `public_code`, `customer_name`, `customer_phone`, `customer_instagram`, `items` (jsonb), `subtotal`, `shipping_fee`, `total`, `status`, `shipping_address` (jsonb), `receipt_path`, `inventory_restocked`, `delivery_zone_id` (references `delivery_zones` `on delete set null`), `delivery_city`, `delivery_zone_name`, `delivery_provider`, `delivery_estimate`, `attribution` (bounded allowlisted jsonb, default `{}`), `created_at`, `updated_at`. Historical orders keep delivery snapshots null and have empty attribution by default.
+- `orders`: `id`, `store_id`, `public_code`, `customer_name`, `customer_phone`, `customer_instagram`, `items` (jsonb), `subtotal`, `shipping_fee`, `total`, `status`, `shipping_address` (jsonb), `receipt_path`, `inventory_restocked`, `delivery_zone_id` (references `delivery_zones` `on delete set null`), `delivery_city`, `delivery_zone_name`, `delivery_provider`, `delivery_estimate`, `attribution` (bounded allowlisted jsonb, default `{}`), `payment_verified_at`, `payment_event_id` (both set once, together, on the first `Pending Verification` → `Processing` transition), `created_at`, `updated_at`. Historical orders keep delivery snapshots and payment fields null and have empty attribution by default.
 - Each merchant (profile) belongs to exactly one store. Admin users are Supabase Auth users with a matching `profiles` row whose `role = 'admin'` and whose store is `active`.
 
 ## Tenant Security Model
@@ -92,12 +92,17 @@ The `/` platform homepage is intentionally small and supports assisted onboardin
   - `Shipped` → `Fulfilled`
 - `Fulfilled` and `Cancelled` are terminal; repeated same-status calls are idempotent.
 - Cancellation restores reserved inventory exactly once (`inventory_restocked`) and only before shipment.
+- The first `Pending Verification` → `Processing` transition records the verified-payment fact (`payment_verified_at`, `payment_event_id`) in the same transaction; later cancellation keeps it.
 
 ## Measurement and consent
 - walkerOS is the structured storefront event model/collector; a local destination adapter forwards Analytics-consented events to an external Umami instance. Umami is not embedded or hosted by InstaStore.
 - Public runtime configuration is optional: `PUBLIC_UMAMI_SCRIPT_URL`, `PUBLIC_UMAMI_WEBSITE_ID`, and optionally `PUBLIC_UMAMI_HOST_URL`. Missing configuration is a no-op.
-- Necessary is always enabled. Analytics and Marketing default off; the versioned choice is stored in localStorage and can be reopened via the storefront footer. There is no Marketing destination in this batch.
+- Necessary is always enabled. Analytics and Marketing default off and are independent. Choices are scoped per store (`instastore_consent:v2:<store_id>`, via `readConsent(storeId)` / `saveConsent(storeId, …)`), fall back to page memory when storage fails, and can be reopened via the storefront footer.
+- Events are routed per destination by purpose (`src/lib/analytics/events.ts`): Umami is Analytics; the Meta destination is Marketing and disabled (no network). Umami absence or failure never blocks other destinations or commerce. Each browser action gets one `event_id`.
+- Campaign attribution keeps coherent per-store `first`/`latest` snapshots that expire after 30 days; only an explicit UTM or `fbclid` replaces `latest`.
+- Meta foundation rules and what remains for activation: `docs/META_FOUNDATION.md`. Server-only eligibility and sender boundary live in `src/lib/marketing/server/` and must not be imported by browser code.
 - Tracked events: page view, product view, search submit, product add, cart view, checkout start, order submit. Every event includes `store_id` and `store_slug`; no customer identity, address, receipt path, or tracking code is sent. Order submit means order created, not verified payment.
+- Migration `0017_payment_verification_fact.sql` adds the payment fact and store-scoped consent metadata (`consent_updated_at`, server `consent_received_at`, `consent_store_id`) to order attribution.
 - Migration `0015_measurement_foundation.sql` adds `orders.attribution`; its RPC accepts only landing/referrer, approved UTM/click-id fields, consent, and random store-scoped visitor/session IDs, with consent checks and maximum lengths. URL queries/hashes are stripped. No analytics-events table or Meta Pixel/CAPI is used.
 
 ## T09 real-integration launch gate
@@ -143,4 +148,5 @@ T09 must exercise a real, isolated Supabase project and real external Umami befo
 - `pnpm build` — production build; Umami configuration is optional.
 - `pnpm preview` — serve the production build.
 - `pnpm check` — Astro type check.
+- `pnpm test` — Vitest unit tests (`tests/`) for consent, routing, attribution, and eligibility. Database behavior is verified against a real Supabase project, not mocked SQL.
 - `pnpm clean` — clear `dist`/`.astro` caches.

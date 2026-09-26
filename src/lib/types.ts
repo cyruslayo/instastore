@@ -87,6 +87,10 @@ export interface Order {
   delivery_zone_name?: string | null;
   delivery_provider?: string | null;
   delivery_estimate?: string | null;
+  /** First trusted payment verification time (database clock); null before verification. */
+  payment_verified_at?: string | null;
+  /** Stable ID for the verified-payment event; reused for any later destination delivery. */
+  payment_event_id?: string | null;
   created_at: string;
   updated_at: string;
 }

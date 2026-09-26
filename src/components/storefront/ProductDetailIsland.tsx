@@ -5,7 +5,7 @@ import { formatNaira } from "@/lib/utils";
 import type { Product } from "@/lib/types";
 import ProductDescription from "@/components/storefront/ProductDescription";
 import { trackStoreEvent } from "@/lib/analytics/events";
-import { readConsent } from "@/lib/analytics/consent";
+import { CONSENT_EVENT, hasOptionalConsent } from "@/lib/analytics/consent";
 
 export default function ProductDetailIsland({ product, storeId, storeSlug }: { product: Product; storeId: string; storeSlug: string }) {
   const [quantity, setQuantity] = useState(1);
@@ -19,13 +19,13 @@ export default function ProductDetailIsland({ product, storeId, storeSlug }: { p
 
   useEffect(() => {
     const reportProductView = () => {
-      if (!readConsent()?.analytics || productViewSent.current) return;
+      if (!hasOptionalConsent(storeId) || productViewSent.current) return;
       productViewSent.current = true;
       trackStoreEvent("product view", { store_id: storeId, store_slug: storeSlug, product_id: product.id, category: product.category, price: Number(product.price), in_stock: product.inventory > 0 });
     };
     reportProductView();
-    window.addEventListener("instastore:consent", reportProductView);
-    return () => window.removeEventListener("instastore:consent", reportProductView);
+    window.addEventListener(CONSENT_EVENT, reportProductView);
+    return () => window.removeEventListener(CONSENT_EVENT, reportProductView);
   }, [product.category, product.id, product.inventory, product.price, storeId, storeSlug]);
 
   const handleAddToCart = () => {

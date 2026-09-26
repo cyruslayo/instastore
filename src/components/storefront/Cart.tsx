@@ -6,7 +6,7 @@ import { storePath } from '@/lib/storePaths';
 import { useHydrated } from '@/lib/useHydrated';
 import { useEffect, useRef } from 'react';
 import { trackStoreEvent } from '@/lib/analytics/events';
-import { readConsent } from '@/lib/analytics/consent';
+import { CONSENT_EVENT, hasOptionalConsent } from '@/lib/analytics/consent';
 
 export default function Cart({ storeId, storeSlug }: { storeId: string; storeSlug: string }) {
   const hydrated = useHydrated();
@@ -19,13 +19,13 @@ export default function Cart({ storeId, storeSlug }: { storeId: string; storeSlu
   const viewed = useRef(false);
   useEffect(() => {
     const reportCartView = () => {
-      if (!hydrated || !readConsent()?.analytics || viewed.current) return;
+      if (!hydrated || !hasOptionalConsent(storeId) || viewed.current) return;
       viewed.current = true;
       trackStoreEvent('cart view', { store_id: storeId, store_slug: storeSlug, item_count: items.reduce((count, item) => count + item.quantity, 0), subtotal });
     };
     reportCartView();
-    window.addEventListener('instastore:consent', reportCartView);
-    return () => window.removeEventListener('instastore:consent', reportCartView);
+    window.addEventListener(CONSENT_EVENT, reportCartView);
+    return () => window.removeEventListener(CONSENT_EVENT, reportCartView);
   }, [hydrated, items, storeId, storeSlug, subtotal]);
   const checkoutHref = storePath(storeSlug, 'checkout');
 

@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import {
   type SiteSettings,
 } from "@/lib/siteSettings";
-import { CONSENT_VERSION, readConsent, saveConsent, type ConsentRecord } from "@/lib/analytics/consent";
-import { syncAnalyticsConsent } from "@/lib/analytics/events";
+import { readConsent, saveConsent, type ConsentRecord } from "@/lib/analytics/consent";
+import { preloadConsentedDestinations } from "@/lib/analytics/events";
 
 function instagramUrl(value: string): string | null {
   const handle = value
@@ -18,7 +18,7 @@ function whatsappUrl(value: string): string | null {
   return digits ? `https://wa.me/${digits}` : null;
 }
 
-export default function StorefrontFooter({ initialSettings }: { initialSettings: SiteSettings }) {
+export default function StorefrontFooter({ initialSettings, storeId }: { initialSettings: SiteSettings; storeId: string }) {
   const [settings] = useState<SiteSettings>(initialSettings);
   const [consent, setConsent] = useState<ConsentRecord | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -27,13 +27,13 @@ export default function StorefrontFooter({ initialSettings }: { initialSettings:
   const [marketing, setMarketing] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
   useEffect(() => {
-    const currentConsent = readConsent();
+    const currentConsent = readConsent(storeId);
     setConsent(currentConsent);
     setAnalytics(currentConsent?.analytics ?? false);
     setMarketing(currentConsent?.marketing ?? false);
     setIsOpen(!currentConsent);
-    syncAnalyticsConsent(currentConsent ?? { version: CONSENT_VERSION, analytics: false, marketing: false, updatedAt: new Date().toISOString() });
-  }, []);
+    preloadConsentedDestinations(currentConsent);
+  }, [storeId]);
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
@@ -44,14 +44,13 @@ export default function StorefrontFooter({ initialSettings }: { initialSettings:
   const instagram = instagramUrl(settings.instagramHandle);
   const whatsapp = whatsappUrl(settings.whatsappNumber);
   const choose = (allowAnalytics: boolean, allowMarketing: boolean) => {
-    const nextConsent = saveConsent(allowAnalytics, allowMarketing);
+    const nextConsent = saveConsent(storeId, allowAnalytics, allowMarketing);
     setConsent(nextConsent);
     setAnalytics(nextConsent.analytics);
     setMarketing(nextConsent.marketing);
     setIsOpen(false);
     setCustomize(false);
-    syncAnalyticsConsent(nextConsent);
-    window.dispatchEvent(new Event("instastore:consent"));
+    preloadConsentedDestinations(nextConsent);
   };
   return (
     <footer

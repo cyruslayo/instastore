@@ -15,7 +15,7 @@ import { useHydrated } from "@/lib/useHydrated";
 import type { DeliveryCity, DeliveryZone } from "@/lib/types";
 import { buildOrderAttribution } from "@/lib/analytics/attribution";
 import { trackStoreEvent } from "@/lib/analytics/events";
-import { readConsent } from "@/lib/analytics/consent";
+import { CONSENT_EVENT, hasOptionalConsent } from "@/lib/analytics/consent";
 
 const RECEIPT_TYPES = ["image/jpeg", "image/png", "application/pdf"] as const;
 const CITIES: DeliveryCity[] = ["Abuja", "Lagos"];
@@ -88,13 +88,13 @@ export default function Checkout({ storeId, storeSlug }: { storeId: string; stor
   const subtotal = hydrated ? cartSubtotal : 0;
   useEffect(() => {
     const reportCheckoutStart = () => {
-      if (!hydrated || items.length === 0 || !readConsent()?.analytics || checkoutStarted.current) return;
+      if (!hydrated || items.length === 0 || !hasOptionalConsent(storeId) || checkoutStarted.current) return;
       checkoutStarted.current = true;
       trackStoreEvent('checkout start', { store_id: storeId, store_slug: storeSlug, item_count: items.reduce((count, item) => count + item.quantity, 0), subtotal });
     };
     reportCheckoutStart();
-    window.addEventListener('instastore:consent', reportCheckoutStart);
-    return () => window.removeEventListener('instastore:consent', reportCheckoutStart);
+    window.addEventListener(CONSENT_EVENT, reportCheckoutStart);
+    return () => window.removeEventListener(CONSENT_EVENT, reportCheckoutStart);
   }, [checkoutStarted, hydrated, items, storeId, storeSlug, subtotal]);
   const cityZones = useMemo(
     () => (form.city ? zones.filter((zone) => zone.city === form.city) : []),
@@ -219,7 +219,7 @@ export default function Checkout({ storeId, storeSlug }: { storeId: string; stor
         receiptPath: uploadedPath,
         storeSlug,
         deliveryZoneId: selectedZone.id,
-        attribution: buildOrderAttribution(storeSlug),
+        attribution: buildOrderAttribution({ store_id: storeId, store_slug: storeSlug }),
       });
       trackStoreEvent('order submit', { store_id: storeId, store_slug: storeSlug, item_count: visibleItems.reduce((count, item) => count + item.quantity, 0), subtotal });
       setTrackingCode(code);

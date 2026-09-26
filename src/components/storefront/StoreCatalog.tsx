@@ -5,7 +5,7 @@ import ProductCard from "@/components/storefront/ProductCard";
 import { filterCatalogProducts, type CatalogSort } from "@/lib/catalogDiscovery";
 import type { Product } from "@/lib/types";
 import { trackStoreEvent } from "@/lib/analytics/events";
-import { readConsent } from "@/lib/analytics/consent";
+import { CONSENT_EVENT, hasOptionalConsent } from "@/lib/analytics/consent";
 
 
 export default function StoreCatalog({
@@ -31,7 +31,7 @@ export default function StoreCatalog({
     const normalizedQuery = query.trim();
     if (!normalizedQuery) return;
     const sendSearch = () => {
-      if (!readConsent()?.analytics) return;
+      if (!hasOptionalConsent(storeId)) return;
       const resultCountValue = resultCount.current;
       const dedupeKey = `${normalizedQuery.toLocaleLowerCase()}|${resultCountValue}`;
       if (lastSearch.current === dedupeKey) return;
@@ -43,8 +43,8 @@ export default function StoreCatalog({
       window.clearTimeout(timer);
       timer = window.setTimeout(sendSearch, 600);
     };
-    window.addEventListener("instastore:consent", scheduleSearch);
-    return () => { window.clearTimeout(timer); window.removeEventListener("instastore:consent", scheduleSearch); };
+    window.addEventListener(CONSENT_EVENT, scheduleSearch);
+    return () => { window.clearTimeout(timer); window.removeEventListener(CONSENT_EVENT, scheduleSearch); };
   }, [query, storeId, storeSlug]);
 
   return (

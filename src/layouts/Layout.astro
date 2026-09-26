@@ -80,7 +80,7 @@ const brandStyle = `--store-primary:${hex.toLowerCase()};--store-on-primary:${on
         <slot />
       </div>
     </MotionProvider>
-    <StorefrontFooter initialSettings={resolvedSettings} client:load />
+    <StorefrontFooter initialSettings={resolvedSettings} storeId={storeId} client:load />
     <StorefrontAnalytics storeId={storeId} storeSlug={storeSlug} pathname={pathname} client:load />
     <BottomNav pathname={pathname} storeSlug={storeSlug} client:load />
 

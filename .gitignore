@@ -21,3 +21,7 @@ build-ladle/
 .zcode/
 first-ui-issue.png
 *.png
+
+# Local AI tool workspaces
+.opencode/
+.stitch/

@@ -61,3 +61,17 @@ Real T09 staging verification has covered Supabase Auth; PostgREST/RLS tenant is
 - Rollback-only checks on the real T09 database passed: first verification and repeat retain one fact; cancel before verification keeps null facts; cancel after verification retains the fact; stock restores once; the checkout RPC accepts a valid total and consent metadata, drops a forged consent store ID, and rejects a forged total; merchant A cannot read or update a test order in a temporary second store; anon cannot read orders or execute `set_order_status`; tracking returns status without attribution or payment fields. Temporary rows and stock changes were rolled back.
 - Local source checks: `pnpm check` passed with 0 errors; the consent, attribution, and routing test run passed (42 tests); `pnpm build` passed with a temporary, workspace-only network-interface shim. No application code or lockfile was changed.
 - Still required before the 0017 checklist is closed: simultaneous status calls on a committed test order and live `pnpm dev` checkout/consent checks against T09. The dev process was started with the same temporary shim, but the cloud browser blocked its local URL. This workspace could not reach the T09 API directly. No checkout order was created through the dev application; no test order or receipt from these SQL checks was left behind. Do not mark these browser checks complete from SQL or unit checks.
+
+## Migration 0017 live consent browser record — 2026-09-26
+
+- Ran `pnpm dev` at commit `a668aa2` on a local Windows workstation against T09 (`qlhmirqekwxcrdvilmzb`), stores `default-store` (A) and `t09-store-b` (B), in the built-in browser with cleared storage.
+- Umami was probed, not live: `.env` has empty Umami values, so a temporary gitignored `.env.probe` set `PUBLIC_UMAMI_SCRIPT_URL=/__umami-probe.js` (a same-origin 404) and `CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false` stopped Wrangler preloading the empty `.env` values. This shows exactly when a Umami request fires and simulates Umami being unreachable. It does not prove event receipt at a real Umami instance.
+- Passed:
+  - Store A, no choice, campaign URL with UTM and `fbclid`: banner shown; no Umami script or request; no attribution stored.
+  - Store A, Marketing only: choice saved under `instastore_consent:v2:<store A id>`; only `fbclid` kept (no UTM, no visitor ID); no Umami request on that page or the next; a direct visit did not overwrite the latest campaign.
+  - Store B: banner shown again; store A's choice not applied.
+  - Store B, Accept all: Umami request fired only after the choice; visitor ID created for store B only.
+  - Umami unreachable (404): add to bag worked (cart scoped to store B) and checkout rendered with delivery zones; the only console errors were the probe 404s.
+  - Store B, Reject optional: store B visitor ID and attribution removed; no Umami request on the next page; store A's choice unchanged.
+- Probe files and browser storage were removed afterwards. No order, receipt, or database row was created.
+- Still open: (1) a checkout order submitted through the app, to confirm app-built `consent_version = '2'`, `consent_updated_at`, and `consent_store_id` on a real row; (2) simultaneous `set_order_status` calls on one committed test order; (3) event receipt at a real Umami instance, if Umami is part of launch. Items 1 and 2 write to T09 and need an operator-signed-in merchant session plus cleanup.
